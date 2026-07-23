@@ -78,3 +78,11 @@ export const ESCROW_STATUS_COLORS: Record<string, string> = {
   refunded:        "bg-gray-100 text-gray-600",
   cancelled:       "bg-gray-100 text-gray-500",
 };
+
+// Assumes Indian 10-digit numbers when no country code is present.
+export function buildWhatsAppLink(phone: string, message: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const withCountryCode = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${withCountryCode}?text=${encodeURIComponent(message)}`;
+}

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft } from "lucide-react";
+import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingStars } from "@/components/ui/RatingStars";
-import { formatPrice, timeAgo } from "@/lib/utils";
+import { formatPrice, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { createCourseOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
 
@@ -24,7 +24,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const { data: course } = await supabase
     .from("courses")
-    .select("*, seller:users!courses_seller_id_fkey(id, full_name, is_seller, seller_verified_at, bio)")
+    .select("*, seller:users!courses_seller_id_fkey(id, full_name, is_seller, seller_verified_at, bio, phone, whatsapp_enabled)")
     .eq("id", id)
     .eq("status", "active")
     .single();
@@ -39,6 +39,9 @@ export default async function CourseDetailPage({ params }: Props) {
       .eq("target_type", "course").eq("target_id", id).order("created_at", { ascending: false }).limit(6),
   ]);
   const enrollCount = enrollRow?.enrollment_count ?? 0;
+  const whatsappLink = course.seller?.phone && course.seller?.whatsapp_enabled
+    ? buildWhatsAppLink(course.seller.phone, `Hi, I'm interested in your course "${course.title}" on Digital Mart.`)
+    : null;
 
   const lessonCount = (modules ?? []).reduce((sum, m) => sum + (m.lessons?.length ?? 0), 0);
 
@@ -125,10 +128,19 @@ export default async function CourseDetailPage({ params }: Props) {
                     <button type="submit" className="btn-primary w-full py-3 mb-2">Enroll — Pay via UPI</button>
                   </form>
                 )}
+                {whatsappLink && (
+                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5 mb-2">
+                    <MessageCircle className="h-4 w-4" /> Message Instructor on WhatsApp
+                  </a>
+                )}
+
                 <div className="mt-5 pt-5 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
                   <Smartphone className="h-4 w-4 text-trust-600 shrink-0" />
                   Manual UPI payment — you confirm you've paid, the seller confirms receipt and unlocks access.
                 </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Digital Mart isn't responsible for conversations or agreements made outside the app.
+                </p>
               </div>
 
               <Link href={`/sellers/${course.seller_id}`} className="card p-5 block hover:shadow-md transition-all">

@@ -1240,6 +1240,10 @@ body {
   animation: fadeIn 0.4s ease-out both;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
@@ -1372,6 +1376,10 @@ body {
   white-space: pre-line;
 }
 
+.rounded {
+  border-radius: 0.25rem;
+}
+
 .rounded-2xl {
   border-radius: 1rem;
 }
@@ -1418,6 +1426,11 @@ body {
 .border-gray-200 {
   --tw-border-opacity: 1;
   border-color: rgb(229 231 235 / var(--tw-border-opacity, 1));
+}
+
+.border-gray-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
 }
 
 .border-gray-50 {
@@ -1990,6 +2003,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.opacity-60 {
+  opacity: 0.6;
+}
+
 .opacity-90 {
   opacity: 0.9;
 }
@@ -2138,6 +2155,11 @@ body {
   --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.focus\:ring-brand-100:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(219 234 254 / var(--tw-ring-opacity, 1));
 }
 
 .disabled\:opacity-0:disabled {

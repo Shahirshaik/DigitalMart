@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { Badge } from "@/components/ui/Badge";
-import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS, timeAgo } from "@/lib/utils";
+import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { createListingOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
 
@@ -25,7 +25,7 @@ export default async function ListingDetailPage({ params }: Props) {
 
   const { data: listing } = await supabase
     .from("listings")
-    .select("*, category:listing_categories(*), seller:users!listings_seller_id_fkey(id, full_name, is_seller, seller_verified_at)")
+    .select("*, category:listing_categories(*), seller:users!listings_seller_id_fkey(id, full_name, is_seller, seller_verified_at, phone, whatsapp_enabled)")
     .eq("id", id)
     .eq("status", "active")
     .single();
@@ -44,6 +44,9 @@ export default async function ListingDetailPage({ params }: Props) {
   ]);
 
   const icon = CATEGORY_ICONS[listing.category?.slug ?? "other"] ?? "📦";
+  const whatsappLink = listing.seller?.phone && listing.seller?.whatsapp_enabled
+    ? buildWhatsAppLink(listing.seller.phone, `Hi, I'm interested in your listing "${listing.title}" on Digital Mart.`)
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -122,14 +125,23 @@ export default async function ListingDetailPage({ params }: Props) {
                     </button>
                   </form>
                 )}
-                <button disabled title="Messaging is coming soon" className="btn-secondary w-full py-2.5">
-                  <MessageCircle className="h-4 w-4" /> Message Seller
-                </button>
+                {whatsappLink ? (
+                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5">
+                    <MessageCircle className="h-4 w-4" /> Message Seller on WhatsApp
+                  </a>
+                ) : (
+                  <button disabled title="This seller isn't reachable on WhatsApp" className="btn-secondary w-full py-2.5">
+                    <MessageCircle className="h-4 w-4" /> Message Seller
+                  </button>
+                )}
 
                 <div className="mt-5 pt-5 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
                   <Smartphone className="h-4 w-4 text-trust-600 shrink-0" />
                   Manual UPI payment — you confirm you've paid, the seller confirms receipt and delivers.
                 </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Digital Mart isn't responsible for conversations or agreements made outside the app.
+                </p>
               </div>
 
               <Link href={`/sellers/${listing.seller_id}`} className="card p-5 block hover:shadow-md transition-all">

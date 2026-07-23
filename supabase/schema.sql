@@ -52,6 +52,7 @@ CREATE TABLE users (
   email               TEXT NOT NULL,
   full_name           TEXT,
   phone               TEXT,
+  whatsapp_enabled    BOOLEAN NOT NULL DEFAULT TRUE,              -- seller opt-out of the WhatsApp contact button
   role                account_role NOT NULL DEFAULT 'user',      -- 'admin' = moderator/admin panel access
   is_seller           BOOLEAN NOT NULL DEFAULT FALSE,             -- buyer & seller coexist on one account
   seller_verified_at  TIMESTAMPTZ,                                -- required before payout eligibility
