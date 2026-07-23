@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { buildWhatsAppLink } from "@/lib/utils";
+
+const SUPPORT_WHATSAPP_LINK = buildWhatsAppLink("+91 9010731398", "Hi, I have a question about Digital Mart.");
 
 export function Footer() {
   return (
@@ -8,7 +11,10 @@ export function Footer() {
         <div className="flex items-center gap-5 text-sm text-gray-500">
           <Link href="/terms" className="hover:text-brand-600">Terms</Link>
           <Link href="/privacy" className="hover:text-brand-600">Privacy</Link>
-          <a href="mailto:digitalmartbuysell@gmail.com" className="hover:text-brand-600">Contact</a>
+          {SUPPORT_WHATSAPP_LINK && (
+            <a href={SUPPORT_WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600">WhatsApp</a>
+          )}
+          <a href="mailto:digitalmartbuysell@gmail.com" className="hover:text-brand-600">Email</a>
         </div>
       </div>
     </footer>
