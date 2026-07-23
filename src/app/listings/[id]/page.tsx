@@ -127,11 +127,11 @@ export default async function ListingDetailPage({ params }: Props) {
                 )}
                 {whatsappLink ? (
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5">
-                    <MessageCircle className="h-4 w-4" /> Message Seller on WhatsApp
+                    <MessageCircle className="h-4 w-4" /> Connect on WhatsApp
                   </a>
                 ) : (
                   <button disabled title="This seller isn't reachable on WhatsApp" className="btn-secondary w-full py-2.5">
-                    <MessageCircle className="h-4 w-4" /> Message Seller
+                    <MessageCircle className="h-4 w-4" /> Connect on WhatsApp
                   </button>
                 )}
 

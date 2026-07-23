@@ -130,7 +130,7 @@ export default async function CourseDetailPage({ params }: Props) {
                 )}
                 {whatsappLink && (
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5 mb-2">
-                    <MessageCircle className="h-4 w-4" /> Message Instructor on WhatsApp
+                    <MessageCircle className="h-4 w-4" /> Connect on WhatsApp
                   </a>
                 )}
 

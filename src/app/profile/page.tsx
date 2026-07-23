@@ -47,10 +47,11 @@ export default async function ProfilePage() {
               <input type="checkbox" name="whatsapp_enabled" defaultChecked={profile?.whatsapp_enabled ?? true}
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-100" />
               <span>
-                <span className="block text-sm font-medium text-gray-900">Let buyers message me on WhatsApp</span>
+                <span className="block text-sm font-medium text-gray-900">Let buyers connect with me on WhatsApp</span>
                 <span className="block text-xs text-gray-500 mt-0.5">
-                  Shows a "Message on WhatsApp" button using your phone number above. Turn this off to stop
-                  receiving WhatsApp contact — buyers can still pay you through Digital Mart's checkout.
+                  Shows a "Connect on WhatsApp" button using your phone number above, visible to anyone viewing
+                  your listings or courses. Turn this off to stop receiving WhatsApp contact — buyers can still
+                  pay you through Digital Mart's checkout.
                 </span>
               </span>
             </label>
