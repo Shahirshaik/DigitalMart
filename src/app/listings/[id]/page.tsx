@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS, timeAgo, buildWhatsAppLink } from "@/lib/utils";
+import { getBrandVisual } from "@/lib/brandIcons";
 import { createListingOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
 
@@ -44,6 +45,7 @@ export default async function ListingDetailPage({ params }: Props) {
   ]);
 
   const icon = CATEGORY_ICONS[listing.category?.slug ?? "other"] ?? "📦";
+  const brand = getBrandVisual(listing.title);
   const whatsappLink = listing.seller?.phone && listing.seller?.whatsapp_enabled
     ? buildWhatsAppLink(listing.seller.phone, `Hi, I'm interested in your listing "${listing.title}" on Digital Mart.`)
     : null;
@@ -61,9 +63,11 @@ export default async function ListingDetailPage({ params }: Props) {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <div className="card overflow-hidden">
-                <div className="h-56 bg-gradient-to-br from-brand-400 to-trust-500 flex items-center justify-center">
+                <div className={`h-56 bg-gradient-to-br ${brand?.gradient ?? "from-brand-400 to-trust-500"} flex items-center justify-center`}>
                   {listing.images?.[0] ? (
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                  ) : brand ? (
+                    <brand.Icon className="h-24 w-24 text-white/95" strokeWidth={1.5} />
                   ) : (
                     <span className="text-7xl">{icon}</span>
                   )}

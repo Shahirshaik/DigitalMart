@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, GraduationCap, Store,
+  type LucideIcon,
+} from "lucide-react";
 
 interface Slide {
   title: string;
@@ -10,6 +13,7 @@ interface Slide {
   cta: string;
   href: string;
   gradient: string;
+  Icon: LucideIcon;
 }
 
 const SLIDES: Slide[] = [
@@ -19,6 +23,7 @@ const SLIDES: Slide[] = [
     cta: "Browse Marketplace",
     href: "/listings",
     gradient: "from-blue-600 via-brand-600 to-indigo-700",
+    Icon: ShieldCheck,
   },
   {
     title: "Learn In-Demand Skills",
@@ -26,6 +31,7 @@ const SLIDES: Slide[] = [
     cta: "Explore Courses",
     href: "/courses",
     gradient: "from-trust-600 via-teal-600 to-emerald-700",
+    Icon: GraduationCap,
   },
   {
     title: "Sell What You Know or Own",
@@ -33,6 +39,7 @@ const SLIDES: Slide[] = [
     cta: "Start Selling",
     href: "/dashboard",
     gradient: "from-violet-600 via-indigo-600 to-brand-700",
+    Icon: Store,
   },
 ];
 
@@ -50,18 +57,24 @@ export function AdCarousel() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="relative h-56 sm:h-64">
+      <div className="relative h-64 sm:h-72">
         {SLIDES.map((slide, i) => (
           <div
             key={slide.title}
             className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
-            <div className="mx-auto max-w-6xl h-full px-4 sm:px-6 flex flex-col items-center justify-center text-center text-white">
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>
-              <p className="text-sm sm:text-base text-white/85 max-w-xl mb-5">{slide.desc}</p>
-              <Link href={slide.href} className="btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5">
-                {slide.cta} <ArrowRight className="h-4 w-4" />
-              </Link>
+            <slide.Icon className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
+            <div className="relative mx-auto max-w-6xl h-full px-12 sm:px-16 flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-center md:text-left text-white">
+              <div className="flex flex-col items-center md:items-start max-w-xl">
+                <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>
+                <p className="text-sm sm:text-base text-white/85 mb-5">{slide.desc}</p>
+                <Link href={slide.href} className="btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5">
+                  {slide.cta} <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="hidden sm:flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-white/15 backdrop-blur">
+                <slide.Icon className="h-14 w-14 text-white" strokeWidth={1.5} />
+              </div>
             </div>
           </div>
         ))}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Zap, ShieldAlert } from "lucide-react";
 import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS } from "@/lib/utils";
+import { getBrandVisual } from "@/lib/brandIcons";
 import { RatingStars } from "@/components/ui/RatingStars";
 import type { ListingFull } from "@/types/database";
 
@@ -20,7 +21,8 @@ interface Props {
 }
 
 export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) {
-  const gradient = GRADIENTS[index % GRADIENTS.length];
+  const brand = getBrandVisual(listing.title);
+  const gradient = brand?.gradient ?? GRADIENTS[index % GRADIENTS.length];
   const icon = CATEGORY_ICONS[listing.category?.slug ?? "other"] ?? "📦";
 
   return (
@@ -29,6 +31,8 @@ export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) 
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {listing.images?.[0] ? (
           <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+        ) : brand ? (
+          <brand.Icon className="h-14 w-14 text-white/95 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
         ) : (
           <span className="text-5xl opacity-90 group-hover:scale-110 transition-transform">{icon}</span>
         )}

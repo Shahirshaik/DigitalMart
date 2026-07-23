@@ -37,7 +37,7 @@ export function Navbar({ userRole, userEmail }: Props) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
-            <span className="text-base font-bold text-gray-900 hidden sm:block">
+            <span className="text-sm sm:text-base font-bold text-gray-900">
               Digital<span className="text-brand-600">Mart</span>
             </span>
           </Link>
