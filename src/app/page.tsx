@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { CourseCard } from "@/components/courses/CourseCard";
+import { AdCarousel } from "@/components/home/AdCarousel";
 import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap } from "lucide-react";
 import { CATEGORY_ICONS } from "@/lib/utils";
 import type { AccountRole, ListingCategory, ListingFull, CourseFull } from "@/types/database";
@@ -50,7 +51,7 @@ export default async function HomePage() {
     supabase.from("listing_categories").select("*").eq("is_active", true).order("sort_order"),
     supabase.from("listings")
       .select("*, category:listing_categories(*), seller:users!listings_seller_id_fkey(id, full_name)")
-      .eq("status", "active").order("view_count", { ascending: false }).limit(4),
+      .eq("status", "active").order("view_count", { ascending: false }),
     supabase.from("courses")
       .select("*, seller:users!courses_seller_id_fkey(id, full_name)")
       .eq("status", "active").order("view_count", { ascending: false }).limit(4),
@@ -77,6 +78,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar userRole={userRole} userEmail={user?.email ?? null} />
+      <AdCarousel />
 
       <main className="flex-1">
         <section className="hero-gradient text-white">
@@ -131,11 +133,11 @@ export default async function HomePage() {
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="section-title">Popular right now</h2>
-                  <p className="text-gray-500 text-sm mt-1">Digital goods trending on the marketplace</p>
+                  <h2 className="section-title">All Listings</h2>
+                  <p className="text-gray-500 text-sm mt-1">Every digital good live on the marketplace right now</p>
                 </div>
                 <Link href="/listings" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
-                  See all <ArrowRight className="h-3.5 w-3.5" />
+                  Search & Filter <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
