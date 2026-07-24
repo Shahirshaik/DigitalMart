@@ -44,7 +44,7 @@ export default async function CertificatePage({ params }: Props) {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{profile?.full_name ?? "Student"}</h1>
             <p className="text-gray-500 mb-6">has successfully completed</p>
             <h2 className="text-xl font-semibold text-brand-700 mb-6">{course.title}</h2>
-            <p className="text-sm text-gray-500 mb-1">Instructed by {course.seller?.full_name}</p>
+            <p className="text-sm text-gray-500 mb-1">Instructed by {(course.seller as any)?.full_name}</p>
             <p className="text-sm text-gray-500 mb-8">Completed on {completedDate}</p>
             <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
               <ShieldCheck className="h-3.5 w-3.5" /> Issued by Digital Mart

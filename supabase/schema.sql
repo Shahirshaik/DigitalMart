@@ -407,20 +407,54 @@ CREATE TRIGGER trg_courses_updated  BEFORE UPDATE ON courses  FOR EACH ROW EXECU
 CREATE TRIGGER trg_orders_updated   BEFORE UPDATE ON orders   FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
 CREATE TRIGGER trg_leads_updated    BEFORE UPDATE ON leads    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
 
--- Escrow flow timestamps: paid -> held, sets the 5-day confirm deadline
+-- Escrow flow timestamps: paid -> held, sets the 5-day confirm deadline.
+-- Also emits in-app notifications to the other party. SECURITY DEFINER
+-- because the buyer paying needs to notify the seller (and vice versa on
+-- release) — neither has an RLS grant to insert a notification row for
+-- someone else (see notif_own policy, Section 4).
 CREATE OR REPLACE FUNCTION set_order_escrow_timestamps()
-RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_item_title TEXT;
 BEGIN
   IF NEW.status = 'held' AND OLD.status = 'pending_payment' THEN
     NEW.paid_at := NOW();
     NEW.confirm_deadline := NOW() + INTERVAL '5 days';
+
+    SELECT title INTO v_item_title FROM listings WHERE id = NEW.listing_id;
+    IF v_item_title IS NULL THEN
+      SELECT title INTO v_item_title FROM courses WHERE id = NEW.course_id;
+    END IF;
+
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    VALUES (NEW.seller_id, 'New order awaiting confirmation',
+            COALESCE(v_item_title, 'An order') || ' — buyer marked payment as sent.',
+            'purchase_confirmation', 'order', NEW.id);
   END IF;
+
   IF NEW.status = 'confirmed' AND OLD.status = 'held' THEN
     NEW.confirmed_at := NOW();
   END IF;
+
   IF NEW.status = 'released' AND OLD.status IN ('confirmed','disputed') THEN
     NEW.released_at := NOW();
+
+    SELECT title INTO v_item_title FROM listings WHERE id = NEW.listing_id;
+    IF v_item_title IS NULL THEN
+      SELECT title INTO v_item_title FROM courses WHERE id = NEW.course_id;
+    END IF;
+
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    VALUES (NEW.buyer_id, 'Order delivered',
+            COALESCE(v_item_title, 'Your order') || ' has been confirmed and released to you.',
+            'delivery_received', 'order', NEW.id);
+
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    VALUES (NEW.seller_id, 'Payout released',
+            'Your earnings for ' || COALESCE(v_item_title, 'an order') || ' have been released.',
+            'payout_released', 'order', NEW.id);
   END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -429,9 +463,35 @@ CREATE TRIGGER trg_order_escrow_timestamps
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION set_order_escrow_timestamps();
 
--- Referral credit: 10% of a referred user's purchase, credited on confirmation
+-- Notify the other order party when a dispute is opened. SECURITY DEFINER
+-- for the same reason as above.
+CREATE OR REPLACE FUNCTION notify_dispute_opened()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_order RECORD;
+  v_other_party UUID;
+BEGIN
+  SELECT * INTO v_order FROM orders WHERE id = NEW.order_id;
+  v_other_party := CASE WHEN NEW.opened_by = v_order.buyer_id THEN v_order.seller_id ELSE v_order.buyer_id END;
+
+  INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+  VALUES (v_other_party, 'A dispute was raised on your order', NEW.reason, 'dispute_update', 'order', NEW.order_id);
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_dispute_notify
+  AFTER INSERT ON disputes
+  FOR EACH ROW EXECUTE FUNCTION notify_dispute_opened();
+
+-- Referral credit: 10% of a referred user's purchase, credited on confirmation.
+-- SECURITY DEFINER — without it, this INSERT into wallet_transactions (a
+-- table the confirming seller/buyer has no RLS grant on) would raise a
+-- permission-denied error and abort the whole order-confirmation transaction
+-- the moment a referred user's order gets confirmed.
 CREATE OR REPLACE FUNCTION credit_referral_on_confirm()
-RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_referral RECORD;
   v_credit   NUMERIC(12,2);
@@ -442,6 +502,10 @@ BEGIN
       v_credit := ROUND(NEW.amount * 0.10, 2);
       INSERT INTO wallet_transactions (user_id, type, amount, related_referral_id, related_order_id)
       VALUES (v_referral.referrer_id, 'earned', v_credit, v_referral.id, NEW.id);
+
+      INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+      VALUES (v_referral.referrer_id, 'Referral credit earned',
+              'You earned ₹' || v_credit || ' credit from a referred purchase.', 'info', 'wallet', NULL);
     END IF;
   END IF;
   RETURN NEW;
@@ -452,9 +516,11 @@ CREATE TRIGGER trg_referral_credit
   AFTER UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION credit_referral_on_confirm();
 
--- Keep wallet balance in sync with its transaction ledger
+-- Keep wallet balance in sync with its transaction ledger. SECURITY DEFINER —
+-- the acting user (whoever the credit was earned by) has no UPDATE grant on
+-- wallets (only a SELECT policy on their own row exists).
 CREATE OR REPLACE FUNCTION sync_wallet_balance()
-RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   UPDATE wallets
   SET balance_credits = balance_credits + NEW.amount, updated_at = NOW()
@@ -467,16 +533,24 @@ CREATE TRIGGER trg_wallet_txn_sync
   AFTER INSERT ON wallet_transactions
   FOR EACH ROW EXECUTE FUNCTION sync_wallet_balance();
 
--- Recompute enrollment progress_pct whenever a lesson is completed
+-- Recompute enrollment progress_pct whenever a lesson is completed, and
+-- notify the buyer once they cross 100%. No DEFINER needed here — the buyer
+-- inserts their own lesson_progress row, so the notification's user_id
+-- matches the acting auth.uid() and satisfies notif_own directly.
 CREATE OR REPLACE FUNCTION recompute_enrollment_progress()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
   v_course_id     UUID;
+  v_course_title  TEXT;
+  v_buyer_id      UUID;
   v_total_lessons INTEGER;
   v_done_lessons  INTEGER;
   v_pct           NUMERIC(5,2);
+  v_was_completed BOOLEAN;
 BEGIN
-  SELECT course_id INTO v_course_id FROM enrollments WHERE id = NEW.enrollment_id;
+  SELECT course_id, buyer_id, (completed_at IS NOT NULL)
+    INTO v_course_id, v_buyer_id, v_was_completed
+  FROM enrollments WHERE id = NEW.enrollment_id;
 
   SELECT COUNT(*) INTO v_total_lessons
   FROM course_lessons cl JOIN course_modules cm ON cm.id = cl.module_id
@@ -491,6 +565,14 @@ BEGIN
   SET progress_pct = v_pct,
       completed_at = CASE WHEN v_pct >= 100 THEN NOW() ELSE completed_at END
   WHERE id = NEW.enrollment_id;
+
+  IF v_pct >= 100 AND NOT v_was_completed THEN
+    SELECT title INTO v_course_title FROM courses WHERE id = v_course_id;
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    VALUES (v_buyer_id, 'Course completed!',
+            'You finished ' || COALESCE(v_course_title, 'the course') || ' — your certificate is ready.',
+            'course_progress', 'course', v_course_id);
+  END IF;
 
   RETURN NEW;
 END;
