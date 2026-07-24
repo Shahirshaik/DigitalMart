@@ -7,6 +7,7 @@ import { CourseCard } from "@/components/courses/CourseCard";
 import { AdCarousel } from "@/components/home/AdCarousel";
 import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap } from "lucide-react";
 import { CATEGORY_ICONS } from "@/lib/utils";
+import { getRecommendedCourses } from "@/lib/recommend";
 import type { AccountRole, ListingCategory, ListingFull, CourseFull } from "@/types/database";
 
 const PILLARS = [
@@ -35,9 +36,16 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let userRole: AccountRole | null = null;
+  let recommendedCourses: any[] = [];
+  let recommendedFor: string | null = null;
   if (user) {
-    const { data } = await supabase.from("users").select("role").eq("id", user.id).single();
+    const { data } = await supabase.from("users")
+      .select("role, full_name, category, target_field, skill_level, onboarding_completed_at").eq("id", user.id).single();
     userRole = data?.role ?? null;
+    if (data?.onboarding_completed_at) {
+      recommendedCourses = await getRecommendedCourses(supabase, data, undefined, 4, user.id);
+      recommendedFor = data.full_name ?? null;
+    }
   }
 
   const [
@@ -68,6 +76,12 @@ export default async function HomePage() {
   ]);
   const listingStatsMap = new Map((listingStats ?? []).map((s) => [s.target_id, s]));
   const courseStatsMap = new Map((courseStats ?? []).map((s) => [s.target_id, s]));
+
+  const recommendedIds = recommendedCourses.map((c) => c.id);
+  const { data: recommendedStats } = recommendedIds.length
+    ? await supabase.from("v_review_stats").select("*").eq("target_type", "course").in("target_id", recommendedIds)
+    : { data: [] };
+  const recommendedStatsMap = new Map((recommendedStats ?? []).map((s) => [s.target_id, s]));
 
   const STATS = [
     { icon: Users, label: "Members", value: memberCount ?? 0 },
@@ -187,16 +201,36 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 text-center">
-          <h2 className="section-title mb-3">Not just a shopper — a career path</h2>
-          <p className="text-gray-500 mb-8">
-            Sign up and tell us where you are — student, upskilling professional, or returning
-            after a career gap — and Digital Mart suggests what to learn next.
-          </p>
-          <Link href="/auth/signup" className="btn-primary py-3 px-6 mx-auto">
-            Create Free Account <ArrowRight className="h-4 w-4" />
-          </Link>
-        </section>
+        {recommendedFor && recommendedCourses.length > 0 ? (
+          <section className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="section-title">Recommended for you, {recommendedFor.split(" ")[0]}</h2>
+                <p className="text-gray-500 text-sm mt-1">Based on where you told us you're headed</p>
+              </div>
+              <Link href="/courses" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
+                See all <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+              {(recommendedCourses as unknown as CourseFull[]).map((c, i) => {
+                const s = recommendedStatsMap.get(c.id);
+                return <CourseCard key={c.id} course={c} index={i} rating={s?.avg_rating} reviewCount={s?.review_count} />;
+              })}
+            </div>
+          </section>
+        ) : (
+          <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 text-center">
+            <h2 className="section-title mb-3">Not just a shopper — a career path</h2>
+            <p className="text-gray-500 mb-8">
+              Sign up and tell us where you are — student, upskilling professional, or returning
+              after a career gap — and Digital Mart suggests what to learn next.
+            </p>
+            <Link href="/auth/signup" className="btn-primary py-3 px-6 mx-auto">
+              Create Free Account <ArrowRight className="h-4 w-4" />
+            </Link>
+          </section>
+        )}
       </main>
 
       <Footer />
