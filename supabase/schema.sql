@@ -592,6 +592,9 @@ CREATE POLICY "enrollments_seller_select" ON enrollments FOR SELECT
 -- Seller inserts the enrollment row when releasing a course order (confirmAndReleaseOrder runs as the seller)
 CREATE POLICY "enrollments_seller_insert" ON enrollments FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM courses c WHERE c.id = course_id AND c.seller_id = auth.uid()));
+-- Buyer updates their own progress_pct/completed_at/certificate_issued_at as they complete lessons
+CREATE POLICY "enrollments_buyer_update" ON enrollments FOR UPDATE
+  USING (buyer_id = auth.uid()) WITH CHECK (buyer_id = auth.uid());
 CREATE POLICY "enrollments_admin_all" ON enrollments FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 
 -- Lesson progress

@@ -31,12 +31,15 @@ export default async function CourseDetailPage({ params }: Props) {
 
   if (!course) notFound();
 
-  const [{ data: modules }, { data: stats }, { data: enrollRow }, { data: reviews }] = await Promise.all([
+  const [{ data: modules }, { data: stats }, { data: enrollRow }, { data: reviews }, { data: myEnrollment }] = await Promise.all([
     supabase.from("course_modules").select("*, lessons:course_lessons(*)").eq("course_id", id).order("sort_order"),
     supabase.from("v_review_stats").select("*").eq("target_type", "course").eq("target_id", id).maybeSingle(),
     supabase.from("v_course_enrollment_counts").select("*").eq("course_id", id).maybeSingle(),
     supabase.from("reviews").select("rating, comment, created_at, reviewer:users!reviews_reviewer_id_fkey(full_name)")
       .eq("target_type", "course").eq("target_id", id).order("created_at", { ascending: false }).limit(6),
+    user
+      ? supabase.from("enrollments").select("progress_pct, completed_at").eq("course_id", id).eq("buyer_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   const enrollCount = enrollRow?.enrollment_count ?? 0;
   const whatsappLink = course.seller?.phone && course.seller?.whatsapp_enabled
@@ -123,6 +126,15 @@ export default async function CourseDetailPage({ params }: Props) {
                 </p>
                 {user?.id === course.seller_id ? (
                   <p className="text-center text-sm text-gray-400 py-3 mb-2">This is your own course.</p>
+                ) : myEnrollment ? (
+                  <div className="space-y-2 mb-2">
+                    <Link href={`/courses/${id}/learn`} className="btn-primary w-full py-3">Continue Learning</Link>
+                    {myEnrollment.completed_at && (
+                      <Link href={`/courses/${id}/certificate`} className="btn-secondary w-full py-2.5">
+                        <Award className="h-4 w-4" /> View Certificate
+                      </Link>
+                    )}
+                  </div>
                 ) : (
                   <form action={createCourseOrder.bind(null, course.id)}>
                     <button type="submit" className="btn-primary w-full py-3 mb-2">Enroll — Pay via UPI</button>

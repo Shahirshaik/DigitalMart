@@ -112,6 +112,47 @@ export async function toggleCourseStatus(courseId: string, nextStatus: "active" 
   revalidatePath("/dashboard/courses");
 }
 
+export async function createModule(courseId: string, formData: FormData) {
+  const { supabase } = await requireSeller();
+
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) throw new Error("Module title is required");
+
+  const { count } = await supabase.from("course_modules")
+    .select("*", { count: "exact", head: true }).eq("course_id", courseId);
+
+  const { error } = await supabase.from("course_modules").insert({
+    course_id: courseId,
+    title,
+    sort_order: count ?? 0,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/courses/${courseId}/curriculum`);
+}
+
+export async function createLesson(courseId: string, moduleId: string, formData: FormData) {
+  const { supabase } = await requireSeller();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const video_url = String(formData.get("video_url") ?? "").trim();
+  const durationRaw = String(formData.get("duration_minutes") ?? "");
+  const duration_seconds = durationRaw ? Number(durationRaw) * 60 : null;
+  if (!title) throw new Error("Lesson title is required");
+
+  const { count } = await supabase.from("course_lessons")
+    .select("*", { count: "exact", head: true }).eq("module_id", moduleId);
+
+  const { error } = await supabase.from("course_lessons").insert({
+    module_id: moduleId,
+    title,
+    video_url: video_url || null,
+    duration_seconds,
+    sort_order: count ?? 0,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/courses/${courseId}/curriculum`);
+}
+
 export async function followSeller(sellerId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

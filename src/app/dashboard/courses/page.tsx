@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, GraduationCap } from "lucide-react";
+import { Plus, GraduationCap, BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -48,11 +48,14 @@ export default async function MyCoursesPage() {
                       <span className={`badge ${LISTING_STATUS_COLORS[c.status] ?? "bg-gray-100 text-gray-600"}`}>{c.status}</span>
                     </div>
                   </div>
-                  <form action={toggleCourseStatus.bind(null, c.id, c.status === "active" ? "draft" : "active")} className="shrink-0">
-                    <button type="submit" className="btn-secondary py-2 px-3 text-sm">
-                      {c.status === "active" ? "Unpublish" : "Publish"}
-                    </button>
-                  </form>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link href={`/dashboard/courses/${c.id}/curriculum`} className="btn-ghost py-2 px-3 text-sm"><BookOpen className="h-3.5 w-3.5" /> Curriculum</Link>
+                    <form action={toggleCourseStatus.bind(null, c.id, c.status === "active" ? "draft" : "active")}>
+                      <button type="submit" className="btn-secondary py-2 px-3 text-sm">
+                        {c.status === "active" ? "Unpublish" : "Publish"}
+                      </button>
+                    </form>
+                  </div>
                 </div>
               ))}
             </div>
