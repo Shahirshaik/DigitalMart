@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { CheckCircle2, Clock, ShieldAlert, Copy } from "lucide-react";
+import { CheckCircle2, Clock, ShieldAlert, Copy, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingInput } from "@/components/ui/RatingInput";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, buildWhatsAppLink } from "@/lib/utils";
 import { buildUpiLink, UPI_ID, UPI_PAYEE_NAME } from "@/lib/payment";
 import { markOrderPaid, raiseDispute, submitReview } from "../actions";
 import type { AccountRole } from "@/types/database";
@@ -127,8 +127,23 @@ export default async function CheckoutPage({ params }: Props) {
             <div className="card p-6 text-center">
               <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-3" />
               <h2 className="font-semibold text-gray-900 mb-1">Dispute open</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mb-4">
                 This order is under review by Digital Mart. {dispute?.reason && <span className="block mt-2 italic">"{dispute.reason}"</span>}
+              </p>
+              {(() => {
+                const bridgeLink = buildWhatsAppLink(
+                  "+91 9010731398",
+                  `Hi, I'd like help resolving a dispute on order ${id}. ${dispute?.reason ? `Reason: "${dispute.reason}"` : ""}`
+                );
+                return bridgeLink && (
+                  <a href={bridgeLink} target="_blank" rel="noopener noreferrer" className="btn-secondary mx-auto inline-flex">
+                    <MessageCircle className="h-4 w-4" /> Message Digital Mart on WhatsApp
+                  </a>
+                );
+              })()}
+              <p className="text-xs text-gray-400 mt-3">
+                Digital Mart mediates disputes directly — message us with any proof (screenshots,
+                payment confirmation) and we'll help sort this out between both of you.
               </p>
             </div>
           )}

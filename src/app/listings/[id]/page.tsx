@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Zap, ShieldAlert, ShieldCheck, Smartphone, MessageCircle, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -12,6 +13,27 @@ import { createListingOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
 
 interface Props { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: listing } = await supabase
+    .from("listings").select("title, description, price, currency, images")
+    .eq("id", id).eq("status", "active").single();
+
+  if (!listing) return { title: "Listing not found" };
+
+  const description = listing.description
+    ? listing.description.slice(0, 160)
+    : `${formatPrice(listing.price, listing.currency)} on Digital Mart — escrow-backed marketplace.`;
+  const images = listing.images?.[0] ? [{ url: listing.images[0] }] : undefined;
+
+  return {
+    title: listing.title,
+    description,
+    openGraph: { title: listing.title, description, type: "website", images },
+  };
+}
 
 export default async function ListingDetailPage({ params }: Props) {
   const { id } = await params;

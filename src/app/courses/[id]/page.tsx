@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -11,6 +12,27 @@ import { createCourseOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
 
 interface Props { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: course } = await supabase
+    .from("courses").select("title, description, price, currency, thumbnail_url")
+    .eq("id", id).eq("status", "active").single();
+
+  if (!course) return { title: "Course not found" };
+
+  const description = course.description
+    ? course.description.slice(0, 160)
+    : `${formatPrice(course.price, course.currency)} on Digital Mart — guided courses and mentorship.`;
+  const images = course.thumbnail_url ? [{ url: course.thumbnail_url }] : undefined;
+
+  return {
+    title: course.title,
+    description,
+    openGraph: { title: course.title, description, type: "website", images },
+  };
+}
 
 export default async function CourseDetailPage({ params }: Props) {
   const { id } = await params;

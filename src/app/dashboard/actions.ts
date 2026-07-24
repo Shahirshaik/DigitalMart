@@ -105,6 +105,27 @@ export async function createCourse(formData: FormData) {
   redirect("/dashboard/courses");
 }
 
+export async function updateCourse(courseId: string, formData: FormData) {
+  const { supabase, user, isAdmin } = await requireSeller();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const price = Number(formData.get("price") ?? 0);
+  const thumbnail_url = String(formData.get("thumbnail_url") ?? "").trim();
+
+  if (!title || price < 0) throw new Error("Missing required fields");
+
+  let query = supabase.from("courses")
+    .update({ title, description: description || null, price, thumbnail_url: thumbnail_url || null })
+    .eq("id", courseId);
+  if (!isAdmin) query = query.eq("seller_id", user.id);
+  const { error } = await query;
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/courses");
+  redirect("/dashboard/courses");
+}
+
 export async function toggleCourseStatus(courseId: string, nextStatus: "active" | "draft") {
   const { supabase, user, isAdmin } = await requireSeller();
   let query = supabase.from("courses").update({ status: nextStatus }).eq("id", courseId);

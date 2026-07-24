@@ -620,6 +620,52 @@ $$;
 
 GRANT EXECUTE ON FUNCTION auto_release_overdue_orders() TO anon, authenticated;
 
+-- Automatically award seller_badges when an order is released, instead of
+-- requiring a manual admin action. SECURITY DEFINER because the acting
+-- user (buyer confirming, or the cron RPC) has no RLS grant to insert a
+-- badge row for the seller.
+--
+-- top_seller: lifetime earnings (after platform fee) crosses ₹10,000.
+-- fast_responder: average time from payment to release across the
+-- seller's released orders (minimum 3, so one lucky fast order doesn't
+-- qualify them) stays under 48 hours.
+CREATE OR REPLACE FUNCTION award_seller_badges()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_lifetime_earnings NUMERIC;
+  v_released_count INTEGER;
+  v_avg_hours NUMERIC;
+BEGIN
+  IF NEW.status = 'released' AND OLD.status IN ('confirmed', 'disputed') THEN
+    SELECT COALESCE(SUM(amount * (100 - platform_fee_pct) / 100), 0)
+      INTO v_lifetime_earnings
+    FROM orders WHERE seller_id = NEW.seller_id AND status = 'released';
+
+    IF v_lifetime_earnings >= 10000 THEN
+      INSERT INTO seller_badges (seller_id, badge) VALUES (NEW.seller_id, 'top_seller')
+      ON CONFLICT (seller_id, badge) DO NOTHING;
+    END IF;
+
+    SELECT COUNT(*), AVG(EXTRACT(EPOCH FROM (released_at - paid_at)) / 3600)
+      INTO v_released_count, v_avg_hours
+    FROM orders
+    WHERE seller_id = NEW.seller_id AND status = 'released'
+      AND paid_at IS NOT NULL AND released_at IS NOT NULL;
+
+    IF v_released_count >= 3 AND v_avg_hours < 48 THEN
+      INSERT INTO seller_badges (seller_id, badge) VALUES (NEW.seller_id, 'fast_responder')
+      ON CONFLICT (seller_id, badge) DO NOTHING;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_award_seller_badges
+  AFTER UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION award_seller_badges();
+
 
 -- ============================================================
 -- SECTION 4 : ROW LEVEL SECURITY
