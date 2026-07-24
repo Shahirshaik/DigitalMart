@@ -842,6 +842,20 @@ JOIN users seller ON seller.id = o.seller_id
 WHERE d.status IN ('open','under_review')
 ORDER BY d.created_at ASC;
 
+-- Category performance for the admin analytics overview: listing counts and
+-- released-order revenue per category. security_invoker so it only ever
+-- returns what the querying admin already has RLS access to.
+CREATE OR REPLACE VIEW v_admin_category_performance WITH (security_invoker = true) AS
+SELECT lc.id AS category_id, lc.name AS category_name,
+       COUNT(DISTINCT l.id) AS listing_count,
+       COUNT(o.id) FILTER (WHERE o.status = 'released') AS order_count,
+       COALESCE(SUM(o.amount) FILTER (WHERE o.status = 'released'), 0) AS revenue
+FROM listing_categories lc
+LEFT JOIN listings l ON l.category_id = lc.id
+LEFT JOIN orders o ON o.listing_id = l.id
+GROUP BY lc.id, lc.name
+ORDER BY revenue DESC;
+
 
 -- ============================================================
 -- SECTION 6 : MAKE YOURSELF ADMIN
