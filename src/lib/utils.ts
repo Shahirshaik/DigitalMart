@@ -14,6 +14,16 @@ export function formatPrice(price: number | null, currency = "INR"): string {
   return `${symbol}${price.toLocaleString("en-IN")}`;
 }
 
+// Like formatPrice, but for account balances/earnings — 0 reads as "₹0",
+// never "Free" (which only makes sense for a listing's price).
+export function formatMoney(amount: number, currency = "INR"): string {
+  if (amount === 0) {
+    const symbol = currency === "INR" ? "₹" : currency + " ";
+    return `${symbol}0`;
+  }
+  return formatPrice(amount, currency);
+}
+
 export function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);

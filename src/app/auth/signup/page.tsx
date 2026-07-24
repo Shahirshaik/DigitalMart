@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShieldCheck, Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -11,6 +11,11 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [ref, setRef] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRef(new URLSearchParams(window.location.search).get("ref"));
+  }, []);
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -22,10 +27,14 @@ export default function SignUpPage() {
     setLoading(true);
     setError("");
     const supabase = createClient();
+    const redirectNext = ref ? `/auth/callback?ref=${encodeURIComponent(ref)}` : "/auth/callback";
     const { data, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { full_name: form.name, phone: form.phone } },
+      options: {
+        data: { full_name: form.name, phone: form.phone },
+        emailRedirectTo: `${window.location.origin}${redirectNext}`,
+      },
     });
     if (authError) { setError(authError.message); setLoading(false); return; }
     if (!data.session) {
@@ -33,6 +42,9 @@ export default function SignUpPage() {
       setSuccess(true);
       setLoading(false);
       return;
+    }
+    if (ref && ref !== data.user?.id) {
+      await supabase.from("referrals").insert({ referrer_id: ref, referred_id: data.user!.id, referral_code: ref });
     }
     setSuccess(true);
     setLoading(false);

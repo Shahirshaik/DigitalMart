@@ -582,6 +582,41 @@ CREATE TRIGGER trg_lesson_progress
   AFTER INSERT ON lesson_progress
   FOR EACH ROW EXECUTE FUNCTION recompute_enrollment_progress();
 
+-- Auto-release orders whose 5-day confirm window has passed with no dispute.
+-- SECURITY DEFINER so it can transition orders it doesn't own; called via
+-- RPC from a Vercel Cron-triggered API route using the anon key (no
+-- session, no service-role key involved) — see /api/cron/auto-release.
+-- Idempotent: each UPDATE is guarded by the current status, so a duplicate
+-- or concurrent call is a no-op on rows already processed.
+CREATE OR REPLACE FUNCTION auto_release_overdue_orders()
+RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_order RECORD;
+  v_count INTEGER := 0;
+BEGIN
+  FOR v_order IN
+    SELECT id, item_type, course_id, buyer_id
+    FROM orders
+    WHERE status = 'held' AND confirm_deadline IS NOT NULL AND confirm_deadline < NOW()
+  LOOP
+    UPDATE orders SET status = 'confirmed' WHERE id = v_order.id AND status = 'held';
+    UPDATE orders SET status = 'released'  WHERE id = v_order.id AND status = 'confirmed';
+
+    IF v_order.item_type = 'course' AND v_order.course_id IS NOT NULL THEN
+      INSERT INTO enrollments (course_id, buyer_id)
+      VALUES (v_order.course_id, v_order.buyer_id)
+      ON CONFLICT DO NOTHING;
+    END IF;
+
+    v_count := v_count + 1;
+  END LOOP;
+
+  RETURN v_count;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION auto_release_overdue_orders() TO anon, authenticated;
+
 
 -- ============================================================
 -- SECTION 4 : ROW LEVEL SECURITY

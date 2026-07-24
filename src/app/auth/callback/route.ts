@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const ref = searchParams.get("ref");
 
   if (code) {
     const supabase = await createClient();
@@ -12,6 +13,9 @@ export async function GET(request: Request) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        if (ref && ref !== user.id) {
+          await supabase.from("referrals").insert({ referrer_id: ref, referred_id: user.id, referral_code: ref });
+        }
         const { data: profile } = await supabase
           .from("users").select("role, onboarding_completed_at").eq("id", user.id).single();
         if (profile?.role === "admin") return NextResponse.redirect(`${origin}/admin`);
