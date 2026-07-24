@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { createListing } from "@/app/dashboard/actions";
+import { ImageUploader } from "@/components/ui/ImageUploader";
 import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "New Listing" };
@@ -35,7 +36,8 @@ export default async function NewListingPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea name="description" rows={4} placeholder="What the buyer gets, delivery details, restrictions..." className="input" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <ImageUploader name="image_url" label="Photo of the asset (optional)" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <select name="category_id" required className="input">
@@ -49,7 +51,7 @@ export default async function NewListingPage() {
                 <input name="price" type="number" min={0} step="1" required defaultValue={0} className="input" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Delivery method</label>
                 <select name="delivery_method" className="input" defaultValue="manual_delivery">

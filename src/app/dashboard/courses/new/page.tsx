@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { createCourse } from "@/app/dashboard/actions";
+import { ImageUploader } from "@/components/ui/ImageUploader";
 import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "New Course" };
@@ -33,15 +34,10 @@ export default async function NewCoursePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea name="description" rows={4} placeholder="What will they learn or get?" className="input" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹, 0 = free)</label>
-                <input name="price" type="number" min={0} step="1" required defaultValue={0} className="input" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail URL (optional)</label>
-                <input name="thumbnail_url" placeholder="https://..." className="input" />
-              </div>
+            <ImageUploader name="thumbnail_url" label="Course thumbnail (optional)" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹, 0 = free)</label>
+              <input name="price" type="number" min={0} step="1" required defaultValue={0} className="input" />
             </div>
             <button type="submit" className="btn-primary w-full py-3">Publish Course</button>
           </form>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { updateListing } from "@/app/dashboard/actions";
+import { ImageUploader } from "@/components/ui/ImageUploader";
 import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "Edit Listing" };
@@ -42,7 +43,8 @@ export default async function EditListingPage({ params }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea name="description" rows={4} defaultValue={listing.description ?? ""} className="input" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <ImageUploader name="image_url" defaultValue={listing.images?.[0] ?? null} label="Photo of the asset (optional)" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <select name="category_id" required defaultValue={listing.category_id} className="input">
@@ -56,7 +58,7 @@ export default async function EditListingPage({ params }: Props) {
                 <input name="price" type="number" min={0} step="1" required defaultValue={listing.price} className="input" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Delivery method</label>
                 <select name="delivery_method" className="input" defaultValue={listing.delivery_method}>

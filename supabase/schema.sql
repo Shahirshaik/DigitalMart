@@ -733,3 +733,28 @@ ORDER BY d.created_at ASC;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+
+
+-- ============================================================
+-- SECTION 8 : STORAGE — listing/course image uploads
+-- ============================================================
+-- Public bucket; files are stored under <auth.uid()>/<filename> so the
+-- owner-only insert/update/delete policies below can check the folder name.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('listing-images', 'listing-images', true, 5242880, array['image/png','image/jpeg','image/webp','image/gif'])
+on conflict (id) do nothing;
+
+create policy "listing_images_public_read" on storage.objects
+  for select using (bucket_id = 'listing-images');
+
+create policy "listing_images_owner_insert" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'listing-images' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "listing_images_owner_update" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'listing-images' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "listing_images_owner_delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'listing-images' and (storage.foldername(name))[1] = auth.uid()::text);

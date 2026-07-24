@@ -23,6 +23,7 @@ export async function createListing(formData: FormData) {
   const delivery_method = String(formData.get("delivery_method") ?? "manual_delivery");
   const stockRaw = String(formData.get("stock_count") ?? "");
   const stock_count = stockRaw ? Number(stockRaw) : null;
+  const image_url = String(formData.get("image_url") ?? "").trim();
 
   if (!title || !category_id || price < 0) throw new Error("Missing required fields");
 
@@ -34,6 +35,7 @@ export async function createListing(formData: FormData) {
     price,
     delivery_method,
     stock_count,
+    images: image_url ? [image_url] : null,
     status: "active",
   }).select("id").single();
 
@@ -52,11 +54,15 @@ export async function updateListing(listingId: string, formData: FormData) {
   const delivery_method = String(formData.get("delivery_method") ?? "manual_delivery");
   const stockRaw = String(formData.get("stock_count") ?? "");
   const stock_count = stockRaw ? Number(stockRaw) : null;
+  const image_url = String(formData.get("image_url") ?? "").trim();
 
   if (!title || !category_id || price < 0) throw new Error("Missing required fields");
 
   const { error } = await supabase.from("listings")
-    .update({ title, description: description || null, price, category_id, delivery_method, stock_count })
+    .update({
+      title, description: description || null, price, category_id, delivery_method, stock_count,
+      images: image_url ? [image_url] : null,
+    })
     .eq("id", listingId).eq("seller_id", user.id);
 
   if (error) throw new Error(error.message);
