@@ -589,6 +589,9 @@ CREATE POLICY "course_lessons_owner_write" ON course_lessons FOR ALL
 CREATE POLICY "enrollments_buyer_select" ON enrollments FOR SELECT USING (buyer_id = auth.uid());
 CREATE POLICY "enrollments_seller_select" ON enrollments FOR SELECT
   USING (EXISTS (SELECT 1 FROM courses c WHERE c.id = course_id AND c.seller_id = auth.uid()));
+-- Seller inserts the enrollment row when releasing a course order (confirmAndReleaseOrder runs as the seller)
+CREATE POLICY "enrollments_seller_insert" ON enrollments FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM courses c WHERE c.id = course_id AND c.seller_id = auth.uid()));
 CREATE POLICY "enrollments_admin_all" ON enrollments FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 
 -- Lesson progress

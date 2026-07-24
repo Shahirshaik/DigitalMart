@@ -69,11 +69,71 @@ export async function confirmAndReleaseOrder(orderId: string) {
     .update({ status: "confirmed" }).eq("id", orderId).eq("status", "held");
   if (e1) throw new Error(e1.message);
 
-  const { error: e2 } = await supabase.from("orders")
-    .update({ status: "released" }).eq("id", orderId).eq("status", "confirmed");
+  const { data: order, error: e2 } = await supabase.from("orders")
+    .update({ status: "released" }).eq("id", orderId).eq("status", "confirmed")
+    .select("item_type, course_id, buyer_id").single();
   if (e2) throw new Error(e2.message);
+
+  if (order?.item_type === "course" && order.course_id) {
+    await supabase.from("enrollments").insert({
+      course_id: order.course_id,
+      buyer_id: order.buyer_id,
+    });
+  }
 
   revalidatePath("/dashboard/orders");
   revalidatePath(`/checkout/${orderId}`);
   revalidatePath("/orders");
+}
+
+export async function raiseDispute(orderId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/login?next=/checkout/${orderId}`);
+
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("Please describe the issue");
+
+  const { error: disputeError } = await supabase.from("disputes").insert({
+    order_id: orderId,
+    opened_by: user.id,
+    reason,
+  });
+  if (disputeError) throw new Error(disputeError.message);
+
+  const { error: orderError } = await supabase.from("orders")
+    .update({ status: "disputed" }).eq("id", orderId).eq("status", "held");
+  if (orderError) throw new Error(orderError.message);
+
+  revalidatePath(`/checkout/${orderId}`);
+  revalidatePath("/orders");
+  revalidatePath("/dashboard/orders");
+}
+
+export async function submitReview(
+  orderId: string,
+  targetType: "listing" | "course",
+  targetId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/login?next=/checkout/${orderId}`);
+
+  const rating = Number(formData.get("rating") ?? 0);
+  const comment = String(formData.get("comment") ?? "").trim();
+  if (rating < 1 || rating > 5) throw new Error("Rating must be between 1 and 5");
+
+  const { error } = await supabase.from("reviews").insert({
+    order_id: orderId,
+    reviewer_id: user.id,
+    target_type: targetType,
+    target_id: targetId,
+    rating,
+    comment: comment || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/checkout/${orderId}`);
+  revalidatePath(`/${targetType}s/${targetId}`);
 }

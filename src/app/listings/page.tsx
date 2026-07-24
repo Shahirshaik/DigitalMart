@@ -4,11 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
-import { CATEGORY_ICONS } from "@/lib/utils";
+import { CATEGORY_ICONS, DELIVERY_LABELS } from "@/lib/utils";
 import type { AccountRole, ListingFull, ListingCategory } from "@/types/database";
 
 interface Props {
-  searchParams: Promise<{ q?: string; category?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string; category?: string; page?: string;
+    price_min?: string; price_max?: string; delivery?: string; min_rating?: string;
+  }>;
 }
 
 export const metadata = { title: "Browse Marketplace" };
@@ -43,6 +46,17 @@ export default async function ListingsPage({ searchParams }: Props) {
     const cat = (categories as ListingCategory[] | null)?.find((c) => c.slug === params.category);
     if (cat) query = query.eq("category_id", cat.id);
   }
+  if (params.price_min) query = query.gte("price", Number(params.price_min));
+  if (params.price_max) query = query.lte("price", Number(params.price_max));
+  if (params.delivery) query = query.eq("delivery_method", params.delivery);
+
+  if (params.min_rating) {
+    const { data: qualifying } = await supabase
+      .from("v_review_stats").select("target_id")
+      .eq("target_type", "listing").gte("avg_rating", Number(params.min_rating));
+    const ids = (qualifying ?? []).map((r) => r.target_id);
+    query = query.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  }
 
   const { data: listings, count } = await query;
   const totalPages = Math.ceil((count ?? 0) / limit);
@@ -55,7 +69,11 @@ export default async function ListingsPage({ searchParams }: Props) {
 
   const buildUrl = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const merged = { q: params.q, category: params.category, ...extra };
+    const merged = {
+      q: params.q, category: params.category, price_min: params.price_min,
+      price_max: params.price_max, delivery: params.delivery, min_rating: params.min_rating,
+      ...extra,
+    };
     Object.entries(merged).forEach(([k, v]) => { if (v) p.set(k, v); });
     return `/listings?${p.toString()}`;
   };
@@ -72,13 +90,39 @@ export default async function ListingsPage({ searchParams }: Props) {
               <p className="text-sm text-gray-500">{count ?? 0} digital goods listed</p>
             </div>
 
-            <form method="GET" action="/listings" className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input name="q" defaultValue={params.q} placeholder="Search listings..." className="input pl-10" />
+            <form method="GET" action="/listings" className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input name="q" defaultValue={params.q} placeholder="Search listings..." className="input pl-10" />
+                </div>
+                {params.category && <input type="hidden" name="category" value={params.category} />}
+                <button type="submit" className="btn-primary px-5">Search</button>
               </div>
-              {params.category && <input type="hidden" name="category" value={params.category} />}
-              <button type="submit" className="btn-primary px-5">Search</button>
+              <div className="flex flex-wrap items-center gap-2">
+                <input name="price_min" type="number" min={0} defaultValue={params.price_min} placeholder="Min ₹"
+                  className="input w-24 py-2 text-sm" />
+                <span className="text-gray-400 text-sm">–</span>
+                <input name="price_max" type="number" min={0} defaultValue={params.price_max} placeholder="Max ₹"
+                  className="input w-24 py-2 text-sm" />
+                <select name="delivery" defaultValue={params.delivery ?? ""} className="input w-auto py-2 text-sm">
+                  <option value="">Any delivery</option>
+                  {Object.entries(DELIVERY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                <select name="min_rating" defaultValue={params.min_rating ?? ""} className="input w-auto py-2 text-sm">
+                  <option value="">Any rating</option>
+                  <option value="4.5">4.5+ stars</option>
+                  <option value="4">4+ stars</option>
+                  <option value="3">3+ stars</option>
+                </select>
+                <button type="submit" className="btn-secondary py-2 px-4 text-sm">Apply Filters</button>
+                {(params.price_min || params.price_max || params.delivery || params.min_rating) && (
+                  <Link href={buildUrl({ price_min: undefined, price_max: undefined, delivery: undefined, min_rating: undefined, page: undefined })}
+                    className="text-sm text-gray-500 hover:text-brand-600">Clear filters</Link>
+                )}
+              </div>
             </form>
           </div>
         </div>

@@ -5,9 +5,10 @@ import { CheckCircle2, Clock, ShieldAlert, Copy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { RatingInput } from "@/components/ui/RatingInput";
 import { formatPrice } from "@/lib/utils";
 import { buildUpiLink, UPI_ID, UPI_PAYEE_NAME } from "@/lib/payment";
-import { markOrderPaid } from "../actions";
+import { markOrderPaid, raiseDispute, submitReview } from "../actions";
 import type { AccountRole } from "@/types/database";
 
 interface Props { params: Promise<{ id: string }> }
@@ -39,6 +40,16 @@ export default async function CheckoutPage({ params }: Props) {
   const qrDataUrl = await QRCode.toDataURL(upiLink, { width: 260, margin: 1 });
 
   const isBuyer = order.buyer_id === user.id;
+  const targetId = order.item_type === "listing" ? order.listing?.id : order.course?.id;
+
+  const [{ data: existingReview }, { data: dispute }] = await Promise.all([
+    isBuyer && targetId
+      ? supabase.from("reviews").select("id").eq("order_id", id).eq("reviewer_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    order.status === "disputed" || order.status === "held"
+      ? supabase.from("disputes").select("*").eq("order_id", id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -95,6 +106,30 @@ export default async function CheckoutPage({ params }: Props) {
               {!isBuyer && (
                 <Link href="/dashboard/orders" className="btn-primary mt-4 inline-flex">Go to Orders Dashboard</Link>
               )}
+              {order.confirm_deadline && (
+                <p className="text-xs text-gray-400 mt-3">
+                  Auto-confirms on {new Date(order.confirm_deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} if no dispute is raised.
+                </p>
+              )}
+              {isBuyer && (
+                <details className="mt-5 text-left">
+                  <summary className="text-sm text-red-600 cursor-pointer hover:underline text-center">Report a problem with this order</summary>
+                  <form action={raiseDispute.bind(null, id)} className="mt-3 space-y-2">
+                    <textarea name="reason" required rows={3} placeholder="What went wrong?" className="input" />
+                    <button type="submit" className="btn-secondary w-full py-2.5 text-sm">Raise Dispute</button>
+                  </form>
+                </details>
+              )}
+            </div>
+          )}
+
+          {order.status === "disputed" && (
+            <div className="card p-6 text-center">
+              <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-3" />
+              <h2 className="font-semibold text-gray-900 mb-1">Dispute open</h2>
+              <p className="text-sm text-gray-500">
+                This order is under review by Digital Mart. {dispute?.reason && <span className="block mt-2 italic">"{dispute.reason}"</span>}
+              </p>
             </div>
           )}
 
@@ -108,6 +143,21 @@ export default async function CheckoutPage({ params }: Props) {
                   : "You've confirmed and released this order."}
               </p>
             </div>
+          )}
+
+          {isBuyer && (order.status === "confirmed" || order.status === "released") && targetId && (
+            existingReview ? (
+              <div className="card p-6 text-center text-sm text-gray-500 mt-4">You've already reviewed this order. Thanks!</div>
+            ) : (
+              <div className="card p-6 mt-4">
+                <h2 className="font-semibold text-gray-900 mb-3">Leave a review</h2>
+                <form action={submitReview.bind(null, id, order.item_type, targetId)} className="space-y-3">
+                  <RatingInput />
+                  <textarea name="comment" rows={3} placeholder="How was it? (optional)" className="input" />
+                  <button type="submit" className="btn-primary w-full py-2.5">Submit Review</button>
+                </form>
+              </div>
+            )
           )}
 
           {(order.status === "cancelled" || order.status === "refunded") && (
