@@ -10,7 +10,7 @@ async function requireSeller() {
   if (!user) redirect("/auth/login?next=/dashboard");
   const { data: profile } = await supabase.from("users").select("is_seller, role").eq("id", user.id).single();
   if (!profile?.is_seller && profile?.role !== "admin") redirect("/");
-  return { supabase, user };
+  return { supabase, user, isAdmin: profile?.role === "admin" };
 }
 
 export async function createListing(formData: FormData) {
@@ -45,7 +45,7 @@ export async function createListing(formData: FormData) {
 }
 
 export async function updateListing(listingId: string, formData: FormData) {
-  const { supabase, user } = await requireSeller();
+  const { supabase, user, isAdmin } = await requireSeller();
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -58,12 +58,14 @@ export async function updateListing(listingId: string, formData: FormData) {
 
   if (!title || !category_id || price < 0) throw new Error("Missing required fields");
 
-  const { error } = await supabase.from("listings")
+  let query = supabase.from("listings")
     .update({
       title, description: description || null, price, category_id, delivery_method, stock_count,
       images: image_url ? [image_url] : null,
     })
-    .eq("id", listingId).eq("seller_id", user.id);
+    .eq("id", listingId);
+  if (!isAdmin) query = query.eq("seller_id", user.id);
+  const { error } = await query;
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/listings");
@@ -71,10 +73,10 @@ export async function updateListing(listingId: string, formData: FormData) {
 }
 
 export async function toggleListingStatus(listingId: string, nextStatus: "active" | "draft") {
-  const { supabase, user } = await requireSeller();
-  const { error } = await supabase.from("listings")
-    .update({ status: nextStatus })
-    .eq("id", listingId).eq("seller_id", user.id);
+  const { supabase, user, isAdmin } = await requireSeller();
+  let query = supabase.from("listings").update({ status: nextStatus }).eq("id", listingId);
+  if (!isAdmin) query = query.eq("seller_id", user.id);
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/listings");
 }
@@ -104,10 +106,10 @@ export async function createCourse(formData: FormData) {
 }
 
 export async function toggleCourseStatus(courseId: string, nextStatus: "active" | "draft") {
-  const { supabase, user } = await requireSeller();
-  const { error } = await supabase.from("courses")
-    .update({ status: nextStatus })
-    .eq("id", courseId).eq("seller_id", user.id);
+  const { supabase, user, isAdmin } = await requireSeller();
+  let query = supabase.from("courses").update({ status: nextStatus }).eq("id", courseId);
+  if (!isAdmin) query = query.eq("seller_id", user.id);
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/courses");
 }

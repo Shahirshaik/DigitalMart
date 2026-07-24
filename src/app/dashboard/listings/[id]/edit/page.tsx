@@ -17,10 +17,13 @@ export default async function EditListingPage({ params }: Props) {
   if (!user) redirect(`/auth/login?next=/dashboard/listings/${id}/edit`);
 
   const { data: profile } = await supabase.from("users").select("role, is_seller").eq("id", user.id).single();
-  if (!profile?.is_seller && profile?.role !== "admin") redirect("/");
+  const isAdmin = profile?.role === "admin";
+  if (!profile?.is_seller && !isAdmin) redirect("/");
 
+  let listingQuery = supabase.from("listings").select("*").eq("id", id);
+  if (!isAdmin) listingQuery = listingQuery.eq("seller_id", user.id);
   const [{ data: listing }, { data: categories }] = await Promise.all([
-    supabase.from("listings").select("*").eq("id", id).eq("seller_id", user.id).single(),
+    listingQuery.single(),
     supabase.from("listing_categories").select("*").eq("is_active", true).order("sort_order"),
   ]);
 
