@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Package, GraduationCap, Users, Inbox, Plus, Wallet } from "lucide-react";
+import { Package, GraduationCap, Users, Inbox, Plus, Wallet, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -17,12 +17,13 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase.from("users").select("role, is_seller, full_name").eq("id", user.id).single();
   if (!profile?.is_seller && profile?.role !== "admin") redirect("/");
 
-  const [{ count: listingCount }, { count: courseCount }, { count: pendingOrders }, { data: followerRow }, { data: payouts }] = await Promise.all([
+  const [{ count: listingCount }, { count: courseCount }, { count: pendingOrders }, { data: followerRow }, { data: payouts }, { count: newLeadCount }] = await Promise.all([
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("seller_id", user.id),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("seller_id", user.id),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("seller_id", user.id).eq("status", "held"),
     supabase.from("v_seller_follower_counts").select("follower_count").eq("seller_id", user.id).maybeSingle(),
     supabase.from("v_seller_payouts").select("lifetime_earnings").eq("seller_id", user.id).maybeSingle(),
+    supabase.from("leads").select("*", { count: "exact", head: true }).eq("seller_id", user.id).eq("status", "new"),
   ]);
 
   const STATS = [
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
     { icon: GraduationCap, label: "Courses", value: courseCount ?? 0, href: "/dashboard/courses" },
     { icon: Users, label: "Followers", value: followerRow?.follower_count ?? 0, href: `/sellers/${user.id}` },
     { icon: Inbox, label: "Awaiting confirmation", value: pendingOrders ?? 0, href: "/dashboard/orders" },
+    { icon: UserPlus, label: "New leads", value: newLeadCount ?? 0, href: "/dashboard/leads" },
     { icon: Wallet, label: "Lifetime earnings", value: formatMoney(Number(payouts?.lifetime_earnings ?? 0)), href: "/dashboard/payouts" },
   ];
 
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Seller Dashboard</h1>
           <p className="text-sm text-gray-500 mb-8">Welcome back, {profile?.full_name ?? "seller"}. Post what you have to sell or give away.</p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
             {STATS.map((s) => (
               <Link key={s.label} href={s.href} className="card p-4 text-center hover:-translate-y-0.5">
                 <s.icon className="h-5 w-5 mx-auto mb-2 text-brand-600" />

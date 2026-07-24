@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft, MessageCircle } from "lucide-react";
+import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { WhatsAppLeadButton } from "@/components/ui/WhatsAppLeadButton";
 import { formatPrice, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { createCourseOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
@@ -141,9 +142,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   </form>
                 )}
                 {whatsappLink && (
-                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5 mb-2">
-                    <MessageCircle className="h-4 w-4" /> Connect on WhatsApp
-                  </a>
+                  <WhatsAppLeadButton href={whatsappLink} sellerId={course.seller_id} courseId={course.id} />
                 )}
 
                 <div className="mt-5 pt-5 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
