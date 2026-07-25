@@ -28,12 +28,13 @@ export default async function CheckoutPage({ params }: Props) {
 
   const { data: order } = await supabase
     .from("orders")
-    .select("*, listing:listings(id, title), course:courses(id, title), seller:users!orders_seller_id_fkey(full_name), buyer:users!orders_buyer_id_fkey(full_name)")
+    .select("*, listing:listings(id, title), course:courses(id, title), seller:users!orders_seller_id_fkey(full_name, phone), buyer:users!orders_buyer_id_fkey(full_name, phone)")
     .eq("id", id)
     .single();
 
   if (!order) notFound();
-  if (order.buyer_id !== user.id && order.seller_id !== user.id) notFound();
+  const isAdmin = userRole === "admin";
+  if (order.buyer_id !== user.id && order.seller_id !== user.id && !isAdmin) notFound();
 
   const itemTitle = order.item_type === "listing" ? order.listing?.title : order.course?.title;
   const upiLink = buildUpiLink(order.amount, `DigitalMart ${id.slice(0, 8)}`);
@@ -41,6 +42,13 @@ export default async function CheckoutPage({ params }: Props) {
 
   const isBuyer = order.buyer_id === user.id;
   const targetId = order.item_type === "listing" ? order.listing?.id : order.course?.id;
+
+  const buyerWaLink = order.buyer?.phone
+    ? buildWhatsAppLink(order.buyer.phone, `Hi ${order.buyer?.full_name}, this is Digital Mart following up on your order (${id.slice(0, 8)}) for "${itemTitle}".`)
+    : null;
+  const sellerWaLink = order.seller?.phone
+    ? buildWhatsAppLink(order.seller.phone, `Hi ${order.seller?.full_name}, this is Digital Mart following up on order (${id.slice(0, 8)}) for "${itemTitle}".`)
+    : null;
 
   const [{ data: existingReview }, { data: dispute }] = await Promise.all([
     isBuyer && targetId
@@ -68,14 +76,38 @@ export default async function CheckoutPage({ params }: Props) {
             <p className="text-3xl font-extrabold text-gray-900 mt-3">{formatPrice(order.amount, order.currency)}</p>
           </div>
 
+          {isAdmin && !isBuyer && order.seller_id !== user.id && (
+            <div className="card p-4 mb-4 bg-brand-50/40 border-brand-100">
+              <p className="text-xs font-semibold text-brand-700 uppercase tracking-wide mb-2">Admin — order {id.slice(0, 8)}</p>
+              <p className="text-sm text-gray-700 mb-1">Buyer: {order.buyer?.full_name}</p>
+              <p className="text-sm text-gray-700 mb-3">Seller: {order.seller?.full_name}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {buyerWaLink && (
+                  <a href={buyerWaLink} target="_blank" rel="noopener noreferrer" className="btn-ghost py-1.5 px-3 text-xs">
+                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp buyer
+                  </a>
+                )}
+                {sellerWaLink && (
+                  <a href={sellerWaLink} target="_blank" rel="noopener noreferrer" className="btn-ghost py-1.5 px-3 text-xs">
+                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp seller
+                  </a>
+                )}
+                {!buyerWaLink && !sellerWaLink && (
+                  <p className="text-xs text-gray-400">Neither party has shared a phone number.</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {order.status === "pending_payment" && isBuyer && (
             <div className="card p-6 text-center">
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex gap-3 text-left mb-5">
                 <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800">
-                  This is a <strong>manual UPI payment</strong> — pay the seller directly, then click
-                  "I've Paid" below. The seller confirms receipt and delivers the item; there's no
-                  automated escrow or payment verification yet.
+                  This is a <strong>manual UPI payment</strong> — pay Digital Mart's collection UPI ID
+                  below, then click "I've Paid". We hold your payment reference until the seller
+                  confirms and delivers, then forward the seller their share separately — there's no
+                  automated payment verification yet.
                 </p>
               </div>
 
@@ -100,8 +132,8 @@ export default async function CheckoutPage({ params }: Props) {
               </h2>
               <p className="text-sm text-gray-500">
                 {isBuyer
-                  ? "The seller will confirm they've received your payment and deliver the item. This is manual, so it may take a little while."
-                  : "The buyer marked this as paid. Check your UPI app, then confirm and deliver from your orders dashboard."}
+                  ? "The seller will confirm your payment was received by Digital Mart and deliver the item. This is manual, so it may take a little while."
+                  : "The buyer marked this as paid to Digital Mart's collection account. Confirm and deliver from your orders dashboard — your earnings (after our platform fee) will land in your wallet once it's released."}
               </p>
               {!isBuyer && (
                 <Link href="/dashboard/orders" className="btn-primary mt-4 inline-flex">Go to Orders Dashboard</Link>
@@ -111,6 +143,17 @@ export default async function CheckoutPage({ params }: Props) {
                   Auto-confirms on {new Date(order.confirm_deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} if no dispute is raised.
                 </p>
               )}
+              {isBuyer && (() => {
+                const nudgeLink = buildWhatsAppLink(
+                  "+91 9010731398",
+                  `Hi, I just paid for order ${id.slice(0, 8)} ("${itemTitle}") — could you help speed up confirmation?`
+                );
+                return nudgeLink && (
+                  <a href={nudgeLink} target="_blank" rel="noopener noreferrer" className="btn-ghost mt-4 inline-flex text-xs py-2 px-3">
+                    <MessageCircle className="h-3.5 w-3.5" /> Nudge us on WhatsApp
+                  </a>
+                );
+              })()}
               {isBuyer && (
                 <details className="mt-5 text-left">
                   <summary className="text-sm text-red-600 cursor-pointer hover:underline text-center">Report a problem with this order</summary>

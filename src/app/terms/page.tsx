@@ -43,14 +43,18 @@ export default async function TermsPage() {
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-lg font-semibold text-gray-900">2. Manual UPI payments</h2>
+              <h2 className="text-lg font-semibold text-gray-900">2. Manual UPI payments &amp; wallet payouts</h2>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Payments on Digital Mart are manual. When you check out, you pay the seller directly via
-                UPI and mark the order as paid. The seller then confirms receipt and releases the item.
-                Digital Mart does not process, hold, or verify the movement of money — there is no
-                automated payment gateway or escrow account. Orders auto-confirm a set number of days
-                after payment is marked if the seller doesn't respond and no dispute is raised, to avoid
-                orders being stuck indefinitely.
+                Payments on Digital Mart are manual. When you check out, you pay Digital Mart's UPI
+                collection account and mark the order as paid. The seller confirms receipt of your
+                payment and releases the item. There is no automated payment gateway, and no automated
+                verification that a payment actually happened — the "paid" and "confirmed" steps are
+                self-reported by buyer and seller. Orders auto-confirm a set number of days after
+                payment is marked if the seller doesn't respond and no dispute is raised, to avoid
+                orders being stuck indefinitely. Once released, the seller's earnings (after our
+                platform fee) are added to their in-app wallet balance. Sellers can request a
+                withdrawal of their wallet balance at any time; Digital Mart is notified and manually
+                sends the payment to the seller's UPI ID.
               </p>
             </section>
 

@@ -56,6 +56,7 @@ CREATE TABLE users (
   role                account_role NOT NULL DEFAULT 'user',      -- 'admin' = moderator/admin panel access
   is_seller           BOOLEAN NOT NULL DEFAULT FALSE,             -- buyer & seller coexist on one account
   seller_verified_at  TIMESTAMPTZ,                                -- required before payout eligibility
+  payout_upi_id       TEXT,                                       -- where the admin manually forwards this seller's cut (see 2.6 ORDERS)
   avatar_url          TEXT,
   bio                 TEXT,
 
@@ -206,6 +207,14 @@ CREATE TABLE orders (
   confirm_deadline   TIMESTAMPTZ,                              -- defaults to paid_at + 5 days on payment
   confirmed_at       TIMESTAMPTZ,
   released_at        TIMESTAMPTZ,
+  -- Manual settlement model: every buyer pays into ONE fixed collection UPI
+  -- ID (NEXT_PUBLIC_UPI_ID), not the seller's own account. On release, the
+  -- seller's net-of-fee share is credited to wallet_transactions/wallets
+  -- (see set_order_escrow_timestamps) and this flags that it already
+  -- happened, so a retriggered UPDATE never double-credits the wallet.
+  -- Sellers withdraw from their wallet balance whenever they choose — see
+  -- v_admin_withdrawal_queue and wallet_transactions.fulfilled_at.
+  wallet_credited_at TIMESTAMPTZ,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK ( (item_type = 'listing' AND listing_id IS NOT NULL AND course_id IS NULL)
@@ -344,6 +353,9 @@ CREATE TABLE wallet_transactions (
   amount              NUMERIC(12, 2) NOT NULL,     -- positive for earned, negative for redeemed/withdrawn
   related_referral_id UUID REFERENCES referrals (id) ON DELETE SET NULL,
   related_order_id    UUID REFERENCES orders (id) ON DELETE SET NULL,
+  -- For type='withdrawn' rows only: set when admin manually sends the money
+  -- and marks the request fulfilled. NULL = pending in v_admin_withdrawal_queue.
+  fulfilled_at        TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -356,7 +368,10 @@ CREATE TABLE notifications (
   title         TEXT NOT NULL,
   body          TEXT,
   type          TEXT NOT NULL DEFAULT 'info',   -- purchase_confirmation, delivery_received, confirm_closing,
-                                                  -- dispute_update, payout_released, course_progress
+                                                  -- dispute_update, payout_released, course_progress,
+                                                  -- admin_purchase_activity (sent to every admin — see
+                                                  -- set_order_escrow_timestamps, notify_admin_order_created,
+                                                  -- notify_withdrawal_requested, notify_dispute_opened)
   is_read       BOOLEAN NOT NULL DEFAULT FALSE,
   link_type     TEXT,
   link_id       UUID,
@@ -411,14 +426,22 @@ CREATE TRIGGER trg_orders_updated   BEFORE UPDATE ON orders   FOR EACH ROW EXECU
 CREATE TRIGGER trg_leads_updated    BEFORE UPDATE ON leads    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
 
 -- Escrow flow timestamps: paid -> held, sets the 5-day confirm deadline.
--- Also emits in-app notifications to the other party. SECURITY DEFINER
--- because the buyer paying needs to notify the seller (and vice versa on
--- release) — neither has an RLS grant to insert a notification row for
--- someone else (see notif_own policy, Section 4).
+-- Also emits in-app notifications to the other party AND to every admin
+-- (module 4.10 purchase-activity visibility — the operator wants to know
+-- the moment any buyer/seller performs a purchase action so they can chase
+-- it down manually, since there's no WhatsApp Business API yet to push
+-- outbound messages). On release, credits the seller's wallet with their
+-- net-of-platform-fee share (see wallets/wallet_transactions, Section 2.12)
+-- — this is the pooled-UPI-collection model: buyers never pay the seller
+-- directly, so "released" money has to land somewhere the seller can
+-- request a withdrawal from. SECURITY DEFINER because none of buyer/
+-- seller/admin has an RLS grant to insert rows for someone else (see
+-- notif_own policy and wallet_txn_redeem_own, Section 4).
 CREATE OR REPLACE FUNCTION set_order_escrow_timestamps()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_item_title TEXT;
+  v_net_amount NUMERIC;
 BEGIN
   IF NEW.status = 'held' AND OLD.status = 'pending_payment' THEN
     NEW.paid_at := NOW();
@@ -433,6 +456,12 @@ BEGIN
     VALUES (NEW.seller_id, 'New order awaiting confirmation',
             COALESCE(v_item_title, 'An order') || ' — buyer marked payment as sent.',
             'purchase_confirmation', 'order', NEW.id);
+
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    SELECT u.id, 'Buyer marked an order paid',
+           COALESCE(v_item_title, 'An order') || ' (₹' || NEW.amount || ') — confirm the UPI collection arrived.',
+           'admin_purchase_activity', 'order', NEW.id
+    FROM users u WHERE u.role = 'admin';
   END IF;
 
   IF NEW.status = 'confirmed' AND OLD.status = 'held' THEN
@@ -452,10 +481,18 @@ BEGIN
             COALESCE(v_item_title, 'Your order') || ' has been confirmed and released to you.',
             'delivery_received', 'order', NEW.id);
 
-    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
-    VALUES (NEW.seller_id, 'Payout released',
-            'Your earnings for ' || COALESCE(v_item_title, 'an order') || ' have been released.',
-            'payout_released', 'order', NEW.id);
+    IF NEW.wallet_credited_at IS NULL THEN
+      v_net_amount := ROUND(NEW.amount * (100 - NEW.platform_fee_pct) / 100, 2);
+      NEW.wallet_credited_at := NOW();
+
+      INSERT INTO wallet_transactions (user_id, type, amount, related_order_id)
+      VALUES (NEW.seller_id, 'earned', v_net_amount, NEW.id);
+
+      INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+      VALUES (NEW.seller_id, 'Earnings added to your wallet',
+              '₹' || v_net_amount || ' for ' || COALESCE(v_item_title, 'an order') || ' (after platform fee) is now in your wallet. Request a withdrawal any time.',
+              'payout_released', 'order', NEW.id);
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -466,8 +503,8 @@ CREATE TRIGGER trg_order_escrow_timestamps
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION set_order_escrow_timestamps();
 
--- Notify the other order party when a dispute is opened. SECURITY DEFINER
--- for the same reason as above.
+-- Notify the other order party AND every admin when a dispute is opened
+-- (admin mediates every dispute directly — see checkout page WhatsApp bridge).
 CREATE OR REPLACE FUNCTION notify_dispute_opened()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -480,6 +517,10 @@ BEGIN
   INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
   VALUES (v_other_party, 'A dispute was raised on your order', NEW.reason, 'dispute_update', 'order', NEW.order_id);
 
+  INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+  SELECT u.id, 'Dispute opened — needs mediation', NEW.reason, 'admin_purchase_activity', 'order', NEW.order_id
+  FROM users u WHERE u.role = 'admin';
+
   RETURN NEW;
 END;
 $$;
@@ -487,6 +528,58 @@ $$;
 CREATE TRIGGER trg_dispute_notify
   AFTER INSERT ON disputes
   FOR EACH ROW EXECUTE FUNCTION notify_dispute_opened();
+
+-- Notify every admin the moment any order is first created (pending_payment)
+-- — the operator wants visibility into every purchase action, not just paid
+-- ones, since they personally follow up over WhatsApp.
+CREATE OR REPLACE FUNCTION notify_admin_order_created()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_item_title TEXT;
+BEGIN
+  SELECT title INTO v_item_title FROM listings WHERE id = NEW.listing_id;
+  IF v_item_title IS NULL THEN
+    SELECT title INTO v_item_title FROM courses WHERE id = NEW.course_id;
+  END IF;
+
+  INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+  SELECT u.id, 'New order started',
+         COALESCE(v_item_title, 'An order') || ' (₹' || NEW.amount || ') — buyer is checking out.',
+         'admin_purchase_activity', 'order', NEW.id
+  FROM users u WHERE u.role = 'admin';
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_notify_admin_order_created
+  AFTER INSERT ON orders
+  FOR EACH ROW EXECUTE FUNCTION notify_admin_order_created();
+
+-- Notify every admin when a seller requests a wallet withdrawal, so the
+-- operator can manually send the money and mark it fulfilled (see
+-- wallet_transactions.fulfilled_at, v_admin_withdrawal_queue, module 4.11).
+CREATE OR REPLACE FUNCTION notify_withdrawal_requested()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_seller_name TEXT;
+BEGIN
+  IF NEW.type = 'withdrawn' THEN
+    SELECT full_name INTO v_seller_name FROM users WHERE id = NEW.user_id;
+
+    INSERT INTO notifications (user_id, title, body, type, link_type, link_id)
+    SELECT u.id, 'Withdrawal requested',
+           COALESCE(v_seller_name, 'A seller') || ' requested a withdrawal of ₹' || ABS(NEW.amount) || '. Send payment and mark it fulfilled.',
+           'admin_purchase_activity', 'wallet', NULL
+    FROM users u WHERE u.role = 'admin';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_notify_withdrawal_requested
+  AFTER INSERT ON wallet_transactions
+  FOR EACH ROW EXECUTE FUNCTION notify_withdrawal_requested();
 
 -- Referral credit: 10% of a referred user's purchase, credited on confirmation.
 -- SECURITY DEFINER — without it, this INSERT into wallet_transactions (a
@@ -875,6 +968,17 @@ CREATE POLICY "referrals_insert" ON referrals FOR INSERT WITH CHECK (referred_id
 CREATE POLICY "wallets_own_select" ON wallets FOR SELECT USING (user_id = auth.uid() OR is_admin());
 CREATE POLICY "wallet_txn_own_select" ON wallet_transactions FOR SELECT USING (user_id = auth.uid() OR is_admin());
 
+-- A user can request their own withdrawal (or referral-credit redemption) by
+-- inserting a negative ledger row directly — sync_wallet_balance debits the
+-- balance, trg_notify_withdrawal_requested alerts admin. amount < 0 stops a
+-- user from faking a positive 'earned' row for themselves.
+CREATE POLICY "wallet_txn_redeem_own" ON wallet_transactions FOR INSERT
+  WITH CHECK (user_id = auth.uid() AND type IN ('redeemed_purchase','withdrawn') AND amount < 0);
+
+-- Admin marks a withdrawal request fulfilled (sets fulfilled_at) after
+-- manually sending the money — see v_admin_withdrawal_queue.
+CREATE POLICY "wallet_txn_admin_update" ON wallet_transactions FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+
 -- Notifications
 CREATE POLICY "notif_own" ON notifications FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "notif_admin_insert" ON notifications FOR INSERT WITH CHECK (is_admin());
@@ -893,15 +997,29 @@ FROM listings l
 JOIN listing_categories c ON c.id = l.category_id
 JOIN users u ON u.id = l.seller_id;
 
+-- Seller-facing: pending (still in escrow) + lifetime wallet earnings. The
+-- actual withdrawable figure is wallets.balance_credits — this view is
+-- informational context around it, not the source of truth for balance.
 CREATE OR REPLACE VIEW v_seller_payouts WITH (security_invoker = true) AS
 SELECT o.seller_id,
-       COUNT(*) FILTER (WHERE o.status IN ('held','confirmed'))                 AS pending_count,
-       COALESCE(SUM(o.amount * (100 - o.platform_fee_pct) / 100) FILTER (WHERE o.status IN ('held','confirmed')), 0) AS pending_amount,
-       COALESCE(SUM(o.amount * (100 - o.platform_fee_pct) / 100) FILTER (WHERE o.status = 'released'), 0)            AS released_amount,
-       COUNT(*) FILTER (WHERE o.status = 'disputed')                            AS disputed_count,
-       COALESCE(SUM(o.amount * (100 - o.platform_fee_pct) / 100), 0)            AS lifetime_earnings
+       COUNT(*) FILTER (WHERE o.status = 'held')                                                      AS pending_count,
+       COALESCE(SUM(o.amount * (100 - o.platform_fee_pct) / 100) FILTER (WHERE o.status = 'held'), 0) AS pending_amount,
+       COUNT(*) FILTER (WHERE o.status = 'disputed')                                                   AS disputed_count,
+       COALESCE(SUM(o.amount * (100 - o.platform_fee_pct) / 100) FILTER (WHERE o.status = 'released'), 0) AS lifetime_earnings
 FROM orders o
 GROUP BY o.seller_id;
+
+-- Admin queue: every pending wallet withdrawal request, with the seller's
+-- own UPI ID so the admin knows where to send the money before marking it
+-- fulfilled (wallet_transactions.fulfilled_at).
+CREATE OR REPLACE VIEW v_admin_withdrawal_queue WITH (security_invoker = true) AS
+SELECT wt.id AS request_id, wt.user_id AS seller_id,
+       u.full_name AS seller_name, u.payout_upi_id,
+       ABS(wt.amount) AS amount, wt.created_at AS requested_at
+FROM wallet_transactions wt
+JOIN users u ON u.id = wt.user_id
+WHERE wt.type = 'withdrawn' AND wt.fulfilled_at IS NULL
+ORDER BY wt.created_at ASC;
 
 CREATE OR REPLACE VIEW v_review_stats WITH (security_invoker = true) AS
 SELECT target_type, target_id,

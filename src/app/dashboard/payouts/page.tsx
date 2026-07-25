@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Clock, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, Wallet, TrendingUp, ArrowDownToLine } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -17,17 +17,17 @@ export default async function PayoutsPage() {
   const { data: profile } = await supabase.from("users").select("role, is_seller").eq("id", user.id).single();
   if (!profile?.is_seller && profile?.role !== "admin") redirect("/");
 
-  const [{ data: payouts }, { data: orders }] = await Promise.all([
+  const [{ data: payouts }, { data: wallet }, { data: orders }] = await Promise.all([
     supabase.from("v_seller_payouts").select("*").eq("seller_id", user.id).maybeSingle(),
+    supabase.from("wallets").select("balance_credits").eq("user_id", user.id).single(),
     supabase.from("orders")
       .select("*, listing:listings(title), course:courses(title), buyer:users!orders_buyer_id_fkey(full_name)")
       .eq("seller_id", user.id).order("created_at", { ascending: false }).limit(30),
   ]);
 
   const CARDS = [
-    { icon: Clock, label: "Pending", value: formatMoney(Number(payouts?.pending_amount ?? 0)), sub: `${payouts?.pending_count ?? 0} order(s)`, color: "text-yellow-600" },
-    { icon: CheckCircle2, label: "Released", value: formatMoney(Number(payouts?.released_amount ?? 0)), sub: "paid out", color: "text-green-600" },
-    { icon: AlertTriangle, label: "Disputed", value: payouts?.disputed_count ?? 0, sub: "order(s)", color: "text-red-600" },
+    { icon: Clock, label: "Pending", value: formatMoney(Number(payouts?.pending_amount ?? 0)), sub: `${payouts?.pending_count ?? 0} order(s) in escrow`, color: "text-yellow-600" },
+    { icon: Wallet, label: "Wallet balance", value: formatMoney(Number(wallet?.balance_credits ?? 0)), sub: "withdrawable now", color: "text-blue-600" },
     { icon: TrendingUp, label: "Lifetime earnings", value: formatMoney(Number(payouts?.lifetime_earnings ?? 0)), sub: "after platform fee", color: "text-brand-600" },
   ];
 
@@ -42,10 +42,12 @@ export default async function PayoutsPage() {
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Payouts</h1>
           <p className="text-sm text-gray-500 mb-6">
-            Your earnings after Digital Mart's platform fee, tracked per order.
+            Your earnings (after Digital Mart's platform fee) land in your wallet as soon as an order is
+            released — request a withdrawal any time from the{" "}
+            <Link href="/wallet" className="text-brand-600 hover:underline font-medium">Wallet</Link> page.
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             {CARDS.map((c) => (
               <div key={c.label} className="card p-4">
                 <c.icon className={`h-5 w-5 mb-2 ${c.color}`} />
@@ -55,6 +57,12 @@ export default async function PayoutsPage() {
               </div>
             ))}
           </div>
+
+          {Number(wallet?.balance_credits ?? 0) > 0 && (
+            <Link href="/wallet" className="btn-primary w-full mb-8 py-3">
+              <ArrowDownToLine className="h-4 w-4" /> Go to Wallet to request a withdrawal
+            </Link>
+          )}
 
           <div className="card p-6">
             <h2 className="section-title text-lg mb-4">Order history</h2>
@@ -74,7 +82,11 @@ export default async function PayoutsPage() {
                       <span className="text-sm font-semibold text-gray-800">
                         {formatPrice(Number(o.amount) * (100 - Number(o.platform_fee_pct)) / 100)}
                       </span>
-                      <span className={`badge ${ESCROW_STATUS_COLORS[o.status]}`}>{o.status.replace(/_/g, " ")}</span>
+                      {o.status === "released" ? (
+                        <span className="badge bg-green-100 text-green-800">in wallet</span>
+                      ) : (
+                        <span className={`badge ${ESCROW_STATUS_COLORS[o.status]}`}>{o.status.replace(/_/g, " ")}</span>
+                      )}
                     </div>
                   </div>
                 ))}

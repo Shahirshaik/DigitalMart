@@ -37,10 +37,21 @@ export default async function ProfilePage() {
               <input name="phone" type="tel" defaultValue={profile?.phone ?? ""} placeholder="+91 98765 43210" className="input" />
             </div>
             {profile?.is_seller && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-                <textarea name="bio" rows={3} defaultValue={profile?.bio ?? ""} className="input" />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                  <textarea name="bio" rows={3} defaultValue={profile?.bio ?? ""} className="input" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payout UPI ID</label>
+                  <input name="payout_upi_id" defaultValue={(profile as any)?.payout_upi_id ?? ""}
+                    placeholder="yourname@upi" className="input" />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Your earnings land in your wallet after each sale — when you request a withdrawal,
+                    we manually send it to this UPI ID.
+                  </p>
+                </div>
+              </>
             )}
 
             <label className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 cursor-pointer">

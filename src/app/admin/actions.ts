@@ -58,3 +58,30 @@ export async function resolveDispute(disputeId: string, orderId: string, resolut
 
   revalidatePath("/admin/disputes");
 }
+
+export async function markWithdrawalSent(requestId: string) {
+  const { supabase } = await requireAdmin();
+
+  const { data: request, error } = await supabase.from("wallet_transactions")
+    .update({ fulfilled_at: new Date().toISOString() })
+    .eq("id", requestId)
+    .eq("type", "withdrawn")
+    .is("fulfilled_at", null)
+    .select("user_id, amount")
+    .single();
+  if (error) throw new Error(error.message);
+
+  if (request) {
+    await supabase.from("notifications").insert({
+      user_id: request.user_id,
+      title: "Withdrawal sent",
+      body: `We've sent ₹${Math.abs(Number(request.amount))} to your UPI ID.`,
+      type: "payout_released",
+      link_type: "wallet",
+      link_id: null,
+    });
+  }
+
+  revalidatePath("/admin/payouts");
+  revalidatePath("/wallet");
+}

@@ -1,22 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Wallet, Gift, Users, TrendingUp, ArrowDownToLine, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Wallet, Gift, Users, TrendingUp, ArrowDownToLine, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { formatPrice, formatMoney, timeAgo } from "@/lib/utils";
-import { redeemWalletCredit } from "./actions";
+import { requestWithdrawal } from "./actions";
 import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "Wallet & Referrals" };
 
-const REDEMPTION_THRESHOLD = 5000;
-
 const TXN_LABELS: Record<string, string> = {
-  earned: "Referral credit earned",
+  earned: "Earnings added",
   redeemed_purchase: "Applied to a purchase",
-  withdrawn: "Payout requested",
+  withdrawn: "Withdrawal requested",
 };
 
 export default async function WalletPage() {
@@ -25,7 +23,7 @@ export default async function WalletPage() {
   if (!user) redirect("/auth/login?next=/wallet");
 
   const [{ data: profile }, { data: wallet }, { data: transactions }, { data: referrals }] = await Promise.all([
-    supabase.from("users").select("role").eq("id", user.id).single(),
+    supabase.from("users").select("role, is_seller, payout_upi_id").eq("id", user.id).single(),
     supabase.from("wallets").select("balance_credits").eq("user_id", user.id).single(),
     supabase.from("wallet_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
     supabase.from("referrals").select("id, created_at, referred:users!referrals_referred_id_fkey(full_name, created_at)")
@@ -33,7 +31,7 @@ export default async function WalletPage() {
   ]);
 
   const balance = Number(wallet?.balance_credits ?? 0);
-  const canRedeem = balance >= REDEMPTION_THRESHOLD;
+  const hasPendingWithdrawal = (transactions ?? []).some((t) => t.type === "withdrawn" && !t.fulfilled_at);
   const referralLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://digitalmart-tau.vercel.app"}/auth/signup?ref=${user.id}`;
 
   return (
@@ -53,23 +51,29 @@ export default async function WalletPage() {
             </div>
             <p className="text-3xl font-extrabold text-gray-900 mb-4">{formatMoney(balance)}</p>
 
-            {canRedeem ? (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <form action={redeemWalletCredit.bind(null, "redeemed_purchase")} className="flex-1">
-                  <button type="submit" className="btn-primary w-full py-2.5 text-sm">
-                    <ShoppingBag className="h-4 w-4" /> Apply {formatPrice(REDEMPTION_THRESHOLD)} to next purchase
-                  </button>
-                </form>
-                <form action={redeemWalletCredit.bind(null, "withdrawn")} className="flex-1">
-                  <button type="submit" className="btn-secondary w-full py-2.5 text-sm">
-                    <ArrowDownToLine className="h-4 w-4" /> Request {formatPrice(REDEMPTION_THRESHOLD)} payout
-                  </button>
-                </form>
+            {!profile?.payout_upi_id && (balance > 0 || profile?.is_seller) && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 flex gap-2 text-left mb-3">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  Add a payout UPI ID on your <Link href="/profile" className="underline font-medium">profile</Link> so
+                  we know where to send withdrawals.
+                </p>
               </div>
+            )}
+
+            {hasPendingWithdrawal ? (
+              <p className="text-sm text-gray-500">
+                Withdrawal requested — we'll notify you once it's sent to your UPI ID. Message us on WhatsApp if it's urgent.
+              </p>
+            ) : balance > 0 ? (
+              <form action={requestWithdrawal}>
+                <button type="submit" className="btn-primary w-full py-2.5 text-sm">
+                  <ArrowDownToLine className="h-4 w-4" /> Request withdrawal of {formatPrice(balance)}
+                </button>
+              </form>
             ) : (
               <p className="text-xs text-gray-400">
-                Earn {formatPrice(REDEMPTION_THRESHOLD)} in referral credit to unlock redemption — apply it to a
-                purchase or request a payout.
+                Sell listings or courses, or refer friends, to start building your wallet balance.
               </p>
             )}
           </div>
@@ -118,7 +122,14 @@ export default async function WalletPage() {
                 {transactions.map((t) => (
                   <li key={t.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 pb-2.5 last:pb-0">
                     <div>
-                      <p className="text-gray-800">{TXN_LABELS[t.type] ?? t.type}</p>
+                      <p className="text-gray-800 flex items-center gap-2">
+                        {TXN_LABELS[t.type] ?? t.type}
+                        {t.type === "withdrawn" && (
+                          <span className={`badge ${t.fulfilled_at ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                            {t.fulfilled_at ? "sent" : "pending"}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-gray-400">{timeAgo(t.created_at)}</p>
                     </div>
                     <span className={`font-semibold ${Number(t.amount) >= 0 ? "text-green-600" : "text-gray-600"}`}>

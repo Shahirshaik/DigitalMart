@@ -12,12 +12,14 @@ export async function updateProfile(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
+  const payout_upi_id = String(formData.get("payout_upi_id") ?? "").trim();
   const whatsapp_enabled = formData.get("whatsapp_enabled") === "on";
 
   const { error } = await supabase.from("users").update({
     full_name: full_name || null,
     phone: phone || null,
     bio: bio || null,
+    payout_upi_id: payout_upi_id || null,
     whatsapp_enabled,
   }).eq("id", user.id);
 

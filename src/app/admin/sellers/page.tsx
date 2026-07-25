@@ -14,6 +14,7 @@ const ADMIN_TABS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/sellers", label: "Seller Verification" },
   { href: "/admin/disputes", label: "Disputes" },
+  { href: "/admin/payouts", label: "Payouts" },
 ];
 
 export default async function AdminSellersPage() {

@@ -46,9 +46,11 @@ export default async function PrivacyPage() {
               <h2 className="text-lg font-semibold text-gray-900">2. Payment information</h2>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Digital Mart does not collect or store your bank details, UPI PIN, or card information.
-                Payments happen directly between buyer and seller via UPI, outside of Digital Mart's
-                systems. We only store the seller's public UPI ID (to display a QR code) and the order
-                status you and the other party report.
+                Buyers pay into Digital Mart's own UPI collection account. Once a sale is released, the
+                seller's share (after our platform fee) is added to their in-app wallet balance. If
+                you're a seller, the UPI ID you provide is stored only so we know where to send your
+                withdrawal once you request one — we never store your PIN or full bank details. We also
+                store the order status you and the other party report.
               </p>
             </section>
 

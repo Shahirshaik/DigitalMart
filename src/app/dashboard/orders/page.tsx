@@ -39,7 +39,7 @@ export default async function SellerOrdersPage() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Orders Dashboard</h1>
           <p className="text-sm text-gray-500 mb-6">
-            When a buyer marks an order paid, check your UPI app for the payment, then confirm here.
+            When a buyer marks an order paid, Digital Mart holds the payment reference — confirm delivery here and your earnings (after our platform fee) land in your wallet, ready to withdraw any time.
           </p>
 
           {pending.length > 0 && (
