@@ -13,6 +13,21 @@ async function requireSeller() {
   return { supabase, user, isAdmin: profile?.role === "admin" };
 }
 
+// Self-serve seller conversion — no approval gate for MVP. seller_verified_at
+// (the "Verified" badge) stays a separate, admin-granted trust signal on top
+// of this.
+export async function becomeSeller(next = "/dashboard/listings/new") {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/login?next=/dashboard`);
+
+  const { error } = await supabase.from("users").update({ is_seller: true }).eq("id", user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard");
+  redirect(next);
+}
+
 export async function createListing(formData: FormData) {
   const { supabase, user } = await requireSeller();
 

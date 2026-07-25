@@ -35,6 +35,20 @@ const config: Config = {
           800: "#115e59",
           900: "#134e4a",
         },
+        // Matches the DigitalMart logo's gold — used for seller/earnings
+        // CTAs and accents so "become a seller" visually reads as the money move.
+        gold: {
+          50:  "#fffce8",
+          100: "#fff9c2",
+          200: "#fff085",
+          300: "#ffe340",
+          400: "#ffd100",
+          500: "#e6bb00",
+          600: "#b88f00",
+          700: "#8a6b00",
+          800: "#5c4700",
+          900: "#3d2f00",
+        },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
-import { ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { LogoMark } from "@/components/ui/Logo";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -38,9 +39,7 @@ function LoginForm() {
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 hero-gradient flex-col justify-center px-16 text-white">
         <Link href="/" className="flex items-center gap-3 mb-12">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
-            <ShieldCheck className="h-5 w-5 text-white" />
-          </div>
+          <LogoMark size={40} />
           <span className="text-xl font-bold">Digital Mart</span>
         </Link>
         <h2 className="text-4xl font-extrabold mb-4">Welcome back!</h2>
@@ -63,9 +62,7 @@ function LoginForm() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8 lg:hidden">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600">
-                <ShieldCheck className="h-4 w-4 text-white" />
-              </div>
+              <LogoMark size={36} />
               <span className="text-xl font-bold text-gray-900">Digital<span className="text-brand-600">Mart</span></span>
             </Link>
           </div>

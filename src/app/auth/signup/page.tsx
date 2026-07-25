@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ShieldCheck, Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { LogoMark } from "@/components/ui/Logo";
 
 export default function SignUpPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "" });
@@ -74,20 +75,19 @@ export default function SignUpPage() {
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 hero-gradient flex-col justify-center px-16 text-white">
         <Link href="/" className="flex items-center gap-3 mb-12">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
-            <ShieldCheck className="h-5 w-5 text-white" />
-          </div>
+          <LogoMark size={40} />
           <span className="text-xl font-bold">Digital Mart</span>
         </Link>
-        <h2 className="text-4xl font-extrabold mb-4">Join Digital Mart today</h2>
+        <h2 className="text-4xl font-extrabold mb-4">Start earning on Digital Mart</h2>
         <p className="text-blue-100 text-lg max-w-sm">
-          Free to join. Buy or sell digital goods and courses — every order is escrow-protected.
+          Free to join. List a skill, a course, or a license and get paid directly —
+          every order is escrow-protected.
         </p>
         <div className="mt-10 grid grid-cols-2 gap-4">
           {[
+            { icon: "💰", title: "Keep up to 70%", desc: "Free to list, paid on sale" },
             { icon: "🔒", title: "Escrow Protected", desc: "Funds held till confirmed" },
             { icon: "🎓", title: "Guided Learning", desc: "A path built for you" },
-            { icon: "🆓", title: "One Account", desc: "Buy & sell together" },
             { icon: "⚡", title: "Fast Setup", desc: "Live in 60 sec" },
           ].map((f) => (
             <div key={f.title} className="rounded-xl bg-white/10 p-4 backdrop-blur border border-white/10">
@@ -103,9 +103,7 @@ export default function SignUpPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8 lg:hidden">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600">
-                <ShieldCheck className="h-4 w-4 text-white" />
-              </div>
+              <LogoMark size={36} />
               <span className="text-xl font-bold text-gray-900">Digital<span className="text-brand-600">Mart</span></span>
             </Link>
           </div>

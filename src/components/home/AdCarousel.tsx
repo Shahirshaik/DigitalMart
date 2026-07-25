@@ -14,9 +14,19 @@ interface Slide {
   href: string;
   gradient: string;
   Icon: LucideIcon;
+  gold?: boolean;
 }
 
 const SLIDES: Slide[] = [
+  {
+    title: "Sell What You Know or Own",
+    desc: "Post software keys, subscriptions, or a course in minutes — free to list, keep up to 70% of every sale.",
+    cta: "Start Selling — It's Free",
+    href: "/dashboard",
+    gradient: "from-brand-800 via-brand-600 to-blue-600",
+    Icon: Store,
+    gold: true,
+  },
   {
     title: "Escrow-Backed Trust on Every Order",
     desc: "Your payment is held until you confirm delivery — no risk buying from strangers online.",
@@ -32,14 +42,6 @@ const SLIDES: Slide[] = [
     href: "/courses",
     gradient: "from-trust-600 via-teal-600 to-emerald-700",
     Icon: GraduationCap,
-  },
-  {
-    title: "Sell What You Know or Own",
-    desc: "Post software keys, subscriptions, or a course in minutes — free to list, paid only when you sell.",
-    cta: "Start Selling",
-    href: "/dashboard",
-    gradient: "from-violet-600 via-indigo-600 to-brand-700",
-    Icon: Store,
   },
 ];
 
@@ -68,7 +70,9 @@ export function AdCarousel() {
               <div className="flex flex-col items-center md:items-start max-w-xl">
                 <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>
                 <p className="text-sm sm:text-base text-white/85 mb-5">{slide.desc}</p>
-                <Link href={slide.href} className="btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5">
+                <Link href={slide.href} className={slide.gold
+                  ? "btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5"
+                  : "btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5"}>
                   {slide.cta} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>

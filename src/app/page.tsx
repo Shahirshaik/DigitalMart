@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { AdCarousel } from "@/components/home/AdCarousel";
-import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap } from "lucide-react";
+import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap, Wallet, Zap, Megaphone, Store } from "lucide-react";
 import { CATEGORY_ICONS } from "@/lib/utils";
 import { getRecommendedCourses } from "@/lib/recommend";
 import type { AccountRole, ListingCategory, ListingFull, CourseFull } from "@/types/database";
@@ -29,6 +29,13 @@ const PILLARS = [
     desc: "Buyers aren't just shoppers — onboarding maps each one to a career path and a 'what's next' recommendation.",
     color: "bg-indigo-100 text-indigo-600",
   },
+];
+
+const SELLER_PERKS = [
+  { icon: Wallet, title: "Keep up to 70%", desc: "Free to list — a platform fee only applies once you actually make a sale." },
+  { icon: Zap, title: "Get paid directly", desc: "Buyers pay you via UPI. No payment gateway holding your money hostage." },
+  { icon: Megaphone, title: "Reach real buyers", desc: "Your listing goes straight in front of everyone browsing the marketplace." },
+  { icon: Store, title: "Sell anything digital", desc: "Software keys, subscriptions, guides, or a full course — one storefront." },
 ];
 
 export default async function HomePage() {
@@ -55,6 +62,7 @@ export default async function HomePage() {
     { count: memberCount },
     { count: listingCount },
     { count: courseCount },
+    { count: sellerCount },
   ] = await Promise.all([
     supabase.from("listing_categories").select("*").eq("is_active", true).order("sort_order"),
     supabase.from("listings")
@@ -66,6 +74,7 @@ export default async function HomePage() {
     supabase.from("users").select("*", { count: "exact", head: true }),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("users").select("*", { count: "exact", head: true }).eq("is_seller", true),
   ]);
 
   const listingIds = (featuredListings ?? []).map((l) => l.id);
@@ -85,6 +94,7 @@ export default async function HomePage() {
 
   const STATS = [
     { icon: Users, label: "Members", value: memberCount ?? 0 },
+    { icon: Store, label: "Active Sellers", value: sellerCount ?? 0 },
     { icon: Package, label: "Active Listings", value: listingCount ?? 0 },
     { icon: GraduationCap, label: "Courses", value: courseCount ?? 0 },
   ];
@@ -97,31 +107,58 @@ export default async function HomePage() {
       <main className="flex-1">
         <section className="hero-gradient text-white">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20 text-center relative">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur px-4 py-1.5 text-xs font-medium mb-6 border border-white/10">
-              <ShieldCheck className="h-3.5 w-3.5" /> Escrow-backed middleman on every order
+            <div className="inline-flex items-center gap-2 rounded-full bg-gold-400/20 backdrop-blur px-4 py-1.5 text-xs font-semibold text-gold-200 mb-6 border border-gold-300/30">
+              <Wallet className="h-3.5 w-3.5" /> Free to list — keep up to 70% of every sale
             </div>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
-              One trust engine, <span className="text-trust-300">three markets</span>
+              Got a skill, a course, or a license to sell?<br className="hidden sm:block" />{" "}
+              <span className="text-gold-300">Start earning today.</span>
             </h1>
             <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-8">
-              Buy or sell software keys, subscriptions, guides, and creator-led courses —
-              with every buyer guided toward a personalized career path.
+              Digital Mart gets you in front of real buyers, holds every payment in
+              escrow until delivery is confirmed, and pays you directly via UPI —
+              no gateway, no waiting on someone else's payout schedule.
             </p>
-            <div className="flex items-center justify-center gap-3 mb-10">
-              <Link href="/auth/signup" className="btn-primary bg-white text-brand-700 hover:bg-blue-50 py-3 px-6">
-                Get Started <ArrowRight className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-3 mb-10 flex-wrap">
+              <Link href="/dashboard" className="btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 py-3 px-6 font-bold">
+                Start Selling — It's Free <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="/listings" className="btn-ghost text-white hover:bg-white/10 py-3 px-6">
                 Browse Marketplace
               </Link>
             </div>
-            <div className="flex items-center justify-center gap-8 sm:gap-14">
+            <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap">
               {STATS.map((s) => (
                 <div key={s.label} className="text-center">
                   <div className="flex items-center justify-center gap-1.5 text-2xl sm:text-3xl font-extrabold">
-                    <s.icon className="h-5 w-5 text-trust-300" /> {s.value.toLocaleString("en-IN")}
+                    <s.icon className="h-5 w-5 text-gold-300" /> {s.value.toLocaleString("en-IN")}
                   </div>
                   <p className="text-xs text-blue-200 mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-brand-950 text-white">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+            <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+              <div>
+                <h2 className="text-2xl font-bold">Why sell on Digital Mart</h2>
+                <p className="text-blue-200 text-sm mt-1">Everything you need to turn a skill or a license into income.</p>
+              </div>
+              <Link href="/dashboard" className="btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5 shrink-0">
+                Start Selling <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {SELLER_PERKS.map((p) => (
+                <div key={p.title} className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-400/15 mb-3">
+                    <p.icon className="h-5 w-5 text-gold-300" />
+                  </div>
+                  <h3 className="font-bold mb-1">{p.title}</h3>
+                  <p className="text-sm text-blue-200 leading-relaxed">{p.desc}</p>
                 </div>
               ))}
             </div>

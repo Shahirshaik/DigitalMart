@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ShieldCheck, Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet } from "lucide-react";
+import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/utils";
+import { LogoMark } from "@/components/ui/Logo";
 import type { AccountRole } from "@/types/database";
 
 interface Props {
@@ -89,9 +90,7 @@ export function Navbar({ userRole, userEmail }: Props) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
-              <ShieldCheck className="h-4 w-4 text-white" />
-            </div>
+            <LogoMark size={32} />
             <span className="text-sm sm:text-base font-bold text-gray-900">
               Digital<span className="text-brand-600">Mart</span>
             </span>

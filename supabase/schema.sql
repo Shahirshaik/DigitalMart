@@ -666,6 +666,25 @@ CREATE TRIGGER trg_award_seller_badges
   AFTER UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION award_seller_badges();
 
+-- Locks `role` against self-escalation. Lives here (not in the
+-- users_update_own RLS policy) specifically to avoid a same-table
+-- subquery inside a users policy — see the policy's comment in Section 4
+-- for why that recurses. SECURITY DEFINER so is_admin() resolves correctly
+-- regardless of who's updating.
+CREATE OR REPLACE FUNCTION prevent_self_role_escalation()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role AND NOT is_admin() THEN
+    NEW.role := OLD.role;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_prevent_self_role_escalation
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION prevent_self_role_escalation();
+
 
 -- ============================================================
 -- SECTION 4 : ROW LEVEL SECURITY
@@ -713,8 +732,15 @@ CREATE POLICY "users_select_public_seller" ON users FOR SELECT USING (is_seller 
 -- buyer who isn't also a seller).
 CREATE POLICY "users_select_lead_buyer" ON users FOR SELECT
   USING (EXISTS (SELECT 1 FROM leads l WHERE l.buyer_id = users.id AND l.seller_id = auth.uid()));
-CREATE POLICY "users_update_own" ON users FOR UPDATE USING (id = auth.uid())
-  WITH CHECK (id = auth.uid() AND role = (SELECT role FROM users WHERE id = auth.uid()));
+-- WITH CHECK deliberately does NOT subquery `users` (e.g. to lock `role`)
+-- — a same-table subquery inside a users policy makes Postgres re-apply
+-- users' SELECT policies while evaluating this UPDATE policy, which raises
+-- "infinite recursion detected in policy for relation users" on every
+-- self-update (this broke becomeSeller() and the profile WhatsApp toggle
+-- until caught). The role lock is enforced by a trigger instead, below.
+CREATE POLICY "users_update_own" ON users FOR UPDATE
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
 CREATE POLICY "users_admin_all" ON users FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 
 -- Listing categories
