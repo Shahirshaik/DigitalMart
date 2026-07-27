@@ -28,6 +28,8 @@ const NAV_LINKS = [
   { href: "/listings", label: "Marketplace" },
   { href: "/courses",  label: "Courses" },
   { href: "/requests", label: "Request a Product" },
+  { href: "/dashboard", label: "Become a Seller" },
+  { href: "/wallet", label: "Referral Earnings" },
 ];
 
 function notificationHref(n: NotificationRow): string {

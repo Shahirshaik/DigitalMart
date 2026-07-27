@@ -15,6 +15,8 @@ export async function Footer() {
           <p className="text-sm text-gray-500">© {new Date().getFullYear()} Digital Mart. Sell &amp; buy digital assets — escrow-backed, trust-first.</p>
         </div>
         <div className="flex items-center gap-5 text-sm text-gray-500">
+          <Link href="/about" className="hover:text-brand-600">About</Link>
+          <Link href="/contact" className="hover:text-brand-600">Contact</Link>
           <Link href="/terms" className="hover:text-brand-600">Terms</Link>
           <Link href="/privacy" className="hover:text-brand-600">Privacy</Link>
           {supportWhatsAppLink && (

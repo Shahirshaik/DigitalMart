@@ -50,6 +50,8 @@ export default async function AdminContentPage() {
   const content = Object.fromEntries((contentRows ?? []).map((r) => [r.key, r.value]));
   const termsSections = (legalSections ?? []).filter((s) => s.page === "terms");
   const privacySections = (legalSections ?? []).filter((s) => s.page === "privacy");
+  const aboutSections = (legalSections ?? []).filter((s) => s.page === "about");
+  const contactSections = (legalSections ?? []).filter((s) => s.page === "contact");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -74,6 +76,7 @@ export default async function AdminContentPage() {
             <a href="#carousel" className="hover:underline">Ad Carousel</a>
             <a href="#perks" className="hover:underline">Seller Perks</a>
             <a href="#categories" className="hover:underline">Category Icons</a>
+            <a href="#aboutcontact" className="hover:underline">About &amp; Contact</a>
             <a href="#legal" className="hover:underline">Terms &amp; Privacy</a>
           </nav>
 
@@ -342,6 +345,102 @@ export default async function AdminContentPage() {
                 </form>
               ))}
             </div>
+          </section>
+
+          {/* ── About & Contact ──────────────────────────── */}
+          <section id="aboutcontact" className="card p-6 mb-8 scroll-mt-20">
+            <h2 className="section-title text-lg mb-1">About &amp; Contact Pages</h2>
+            <p className="text-sm text-gray-500 mb-4">Each page is a list of sections — edit the heading and body text of each. The Contact page also shows your WhatsApp number and email from the Hero &amp; Contact panel above.</p>
+
+            <h3 className="font-semibold text-gray-800 mb-3">About Us</h3>
+            <div className="space-y-3 mb-6">
+              {aboutSections.map((s) => (
+                <details key={s.id} className="rounded-xl border border-gray-100 p-4">
+                  <summary className="cursor-pointer text-sm font-medium text-gray-800">{s.heading}</summary>
+                  <form action={upsertLegalSection} className="mt-4 space-y-3">
+                    <input type="hidden" name="id" value={s.id} />
+                    <input type="hidden" name="page" value="about" />
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Heading</label>
+                      <input name="heading" defaultValue={s.heading} required className="input" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Body</label>
+                      <textarea name="body" defaultValue={s.body} rows={4} required className="input" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Sort order</label>
+                      <input type="number" name="sort_order" defaultValue={s.sort_order} className="input w-24" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="submit" className="btn-primary py-2 px-4 text-sm">Save Section</button>
+                    </div>
+                  </form>
+                  <form action={deleteLegalSection.bind(null, s.id)} className="mt-2">
+                    <button type="submit" className="text-xs text-red-600 hover:underline flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" /> Delete section
+                    </button>
+                  </form>
+                </details>
+              ))}
+            </div>
+            <details className="rounded-xl border border-dashed border-gray-200 p-4 mb-8">
+              <summary className="cursor-pointer text-sm font-medium text-brand-600 flex items-center gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> Add About section
+              </summary>
+              <form action={upsertLegalSection} className="mt-4 space-y-3">
+                <input type="hidden" name="page" value="about" />
+                <input name="heading" placeholder="Heading" required className="input" />
+                <textarea name="body" placeholder="Body text" rows={4} required className="input" />
+                <input type="number" name="sort_order" defaultValue={aboutSections.length} className="input w-24" />
+                <button type="submit" className="btn-primary py-2 px-4 text-sm">Add Section</button>
+              </form>
+            </details>
+
+            <h3 className="font-semibold text-gray-800 mb-3">Contact Us</h3>
+            <div className="space-y-3 mb-6">
+              {contactSections.map((s) => (
+                <details key={s.id} className="rounded-xl border border-gray-100 p-4">
+                  <summary className="cursor-pointer text-sm font-medium text-gray-800">{s.heading}</summary>
+                  <form action={upsertLegalSection} className="mt-4 space-y-3">
+                    <input type="hidden" name="id" value={s.id} />
+                    <input type="hidden" name="page" value="contact" />
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Heading</label>
+                      <input name="heading" defaultValue={s.heading} required className="input" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Body</label>
+                      <textarea name="body" defaultValue={s.body} rows={4} required className="input" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Sort order</label>
+                      <input type="number" name="sort_order" defaultValue={s.sort_order} className="input w-24" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="submit" className="btn-primary py-2 px-4 text-sm">Save Section</button>
+                    </div>
+                  </form>
+                  <form action={deleteLegalSection.bind(null, s.id)} className="mt-2">
+                    <button type="submit" className="text-xs text-red-600 hover:underline flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" /> Delete section
+                    </button>
+                  </form>
+                </details>
+              ))}
+            </div>
+            <details className="rounded-xl border border-dashed border-gray-200 p-4">
+              <summary className="cursor-pointer text-sm font-medium text-brand-600 flex items-center gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> Add Contact section
+              </summary>
+              <form action={upsertLegalSection} className="mt-4 space-y-3">
+                <input type="hidden" name="page" value="contact" />
+                <input name="heading" placeholder="Heading" required className="input" />
+                <textarea name="body" placeholder="Body text" rows={4} required className="input" />
+                <input type="number" name="sort_order" defaultValue={contactSections.length} className="input w-24" />
+                <button type="submit" className="btn-primary py-2 px-4 text-sm">Add Section</button>
+              </form>
+            </details>
           </section>
 
           {/* ── Legal Pages ──────────────────────────────── */}

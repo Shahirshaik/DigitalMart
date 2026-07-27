@@ -18,6 +18,8 @@ function revalidateContentPaths() {
   revalidatePath("/");
   revalidatePath("/terms");
   revalidatePath("/privacy");
+  revalidatePath("/about");
+  revalidatePath("/contact");
   revalidatePath("/listings");
   revalidatePath("/courses");
 }
