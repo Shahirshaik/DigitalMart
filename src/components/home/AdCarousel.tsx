@@ -2,103 +2,88 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, GraduationCap, Store,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight, Megaphone } from "lucide-react";
 
-interface Slide {
+export interface Slide {
+  id: string;
   title: string;
-  desc: string;
-  cta: string;
-  href: string;
-  gradient: string;
-  Icon: LucideIcon;
-  gold?: boolean;
+  description: string;
+  cta_label: string;
+  link_url: string;
+  image_url: string | null;
+  is_gold: boolean;
 }
 
-const SLIDES: Slide[] = [
-  {
-    title: "Sell What You Know or Own",
-    desc: "Post software keys, subscriptions, or a course in minutes — free to list, keep up to 70% of every sale.",
-    cta: "Start Selling — It's Free",
-    href: "/dashboard",
-    gradient: "from-brand-800 via-brand-600 to-blue-600",
-    Icon: Store,
-    gold: true,
-  },
-  {
-    title: "Escrow-Backed Trust on Every Order",
-    desc: "Your payment is held until you confirm delivery — no risk buying from strangers online.",
-    cta: "Browse Marketplace",
-    href: "/listings",
-    gradient: "from-blue-600 via-brand-600 to-indigo-700",
-    Icon: ShieldCheck,
-  },
-  {
-    title: "Learn In-Demand Skills",
-    desc: "Courses and guided paths from verified instructors, at a fraction of institute pricing.",
-    cta: "Explore Courses",
-    href: "/courses",
-    gradient: "from-trust-600 via-teal-600 to-emerald-700",
-    Icon: GraduationCap,
-  },
+const GRADIENTS = [
+  "from-brand-800 via-brand-600 to-blue-600",
+  "from-blue-600 via-brand-600 to-indigo-700",
+  "from-trust-600 via-teal-600 to-emerald-700",
 ];
 
-export function AdCarousel() {
+interface Props { slides: Slide[] }
+
+export function AdCarousel({ slides }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    if (slides.length < 2) return;
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % SLIDES.length);
+      setIndex((i) => (i + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
-  const go = (next: number) => setIndex((next + SLIDES.length) % SLIDES.length);
+  if (slides.length === 0) return null;
+
+  const go = (next: number) => setIndex((next + slides.length) % slides.length);
 
   return (
     <section className="relative overflow-hidden">
       <div className="relative h-64 sm:h-72">
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide, i) => (
           <div
-            key={slide.title}
-            className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            key={slide.id}
+            className={`absolute inset-0 ${slide.image_url ? "bg-gray-900" : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
-            <slide.Icon className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
+            {slide.image_url ? (
+              <img src={slide.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+            ) : (
+              <Megaphone className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
+            )}
             <div className="relative mx-auto max-w-6xl h-full px-12 sm:px-16 flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-center md:text-left text-white">
               <div className="flex flex-col items-center md:items-start max-w-xl">
                 <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>
-                <p className="text-sm sm:text-base text-white/85 mb-5">{slide.desc}</p>
-                <Link href={slide.href} className={slide.gold
+                <p className="text-sm sm:text-base text-white/85 mb-5">{slide.description}</p>
+                <Link href={slide.link_url} className={slide.is_gold
                   ? "btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5"
                   : "btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5"}>
-                  {slide.cta} <ArrowRight className="h-4 w-4" />
+                  {slide.cta_label} <ArrowRight className="h-4 w-4" />
                 </Link>
-              </div>
-              <div className="hidden sm:flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-white/15 backdrop-blur">
-                <slide.Icon className="h-14 w-14 text-white" strokeWidth={1.5} />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <button onClick={() => go(index - 1)} aria-label="Previous slide"
-        className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button onClick={() => go(index + 1)} aria-label="Next slide"
-        className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
-        <ChevronRight className="h-5 w-5" />
-      </button>
+      {slides.length > 1 && (
+        <>
+          <button onClick={() => go(index - 1)} aria-label="Previous slide"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button onClick={() => go(index + 1)} aria-label="Next slide"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
+            <ChevronRight className="h-5 w-5" />
+          </button>
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
-        {SLIDES.map((slide, i) => (
-          <button key={slide.title} onClick={() => go(i)} aria-label={`Go to slide ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-1.5 bg-white/50"}`} />
-        ))}
-      </div>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
+            {slides.map((slide, i) => (
+              <button key={slide.id} onClick={() => go(i)} aria-label={`Go to slide ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-1.5 bg-white/50"}`} />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }

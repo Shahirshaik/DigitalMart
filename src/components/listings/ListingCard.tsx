@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Zap, ShieldAlert } from "lucide-react";
-import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS } from "@/lib/utils";
+import { formatPrice, DELIVERY_LABELS } from "@/lib/utils";
 import { getBrandVisual } from "@/lib/brandIcons";
 import { RatingStars } from "@/components/ui/RatingStars";
 import type { ListingFull } from "@/types/database";
@@ -23,7 +23,7 @@ interface Props {
 export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) {
   const brand = getBrandVisual(listing.title);
   const gradient = brand?.gradient ?? GRADIENTS[index % GRADIENTS.length];
-  const icon = CATEGORY_ICONS[listing.category?.slug ?? "other"] ?? "📦";
+  const icon = listing.category?.icon ?? "📦";
 
   return (
     <Link href={`/listings/${listing.id}`}

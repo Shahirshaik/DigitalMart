@@ -63,16 +63,6 @@ export const LISTING_STATUS_COLORS: Record<string, string> = {
   expired:  "bg-gray-100 text-gray-500",
 };
 
-export const CATEGORY_ICONS: Record<string, string> = {
-  os_licenses: "🖥️",
-  productivity_software: "🧩",
-  design_dev_tools: "🛠️",
-  subscriptions: "🔁",
-  guides_ebooks: "📘",
-  gaming: "🎮",
-  social_growth: "📈",
-};
-
 export const DELIVERY_LABELS: Record<string, string> = {
   auto_key: "Instant Delivery",
   manual_delivery: "Manual Delivery",

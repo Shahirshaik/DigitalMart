@@ -5,8 +5,8 @@ import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { AdCarousel } from "@/components/home/AdCarousel";
-import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap, Wallet, Zap, Megaphone, Store } from "lucide-react";
-import { CATEGORY_ICONS } from "@/lib/utils";
+import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap, Wallet, Store } from "lucide-react";
+import { PERK_ICON_MAP } from "@/lib/perkIcons";
 import { getRecommendedCourses } from "@/lib/recommend";
 import type { AccountRole, ListingCategory, ListingFull, CourseFull } from "@/types/database";
 
@@ -29,13 +29,6 @@ const PILLARS = [
     desc: "Buyers aren't just shoppers — onboarding maps each one to a career path and a 'what's next' recommendation.",
     color: "bg-indigo-100 text-indigo-600",
   },
-];
-
-const SELLER_PERKS = [
-  { icon: Wallet, title: "Keep up to 70%", desc: "Free to list — a platform fee only applies once you actually make a sale." },
-  { icon: Zap, title: "Get paid directly", desc: "Buyers pay you via UPI. No payment gateway holding your money hostage." },
-  { icon: Megaphone, title: "Reach real buyers", desc: "Your listing goes straight in front of everyone browsing the marketplace." },
-  { icon: Store, title: "Sell anything digital", desc: "Software keys, subscriptions, guides, or a full course — one storefront." },
 ];
 
 export default async function HomePage() {
@@ -63,6 +56,9 @@ export default async function HomePage() {
     { count: listingCount },
     { count: courseCount },
     { count: sellerCount },
+    { data: contentRows },
+    { data: slideRows },
+    { data: perkRows },
   ] = await Promise.all([
     supabase.from("listing_categories").select("*").eq("is_active", true).order("sort_order"),
     supabase.from("listings")
@@ -75,7 +71,17 @@ export default async function HomePage() {
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("is_seller", true),
+    supabase.from("site_content").select("*"),
+    supabase.from("ad_slides").select("*").eq("is_active", true).order("sort_order"),
+    supabase.from("homepage_perks").select("*").eq("is_active", true).order("sort_order"),
   ]);
+
+  const content = Object.fromEntries((contentRows ?? []).map((r) => [r.key, r.value]));
+  const slides = (slideRows ?? []).map((s) => ({
+    id: s.id, title: s.title, description: s.description, cta_label: s.cta_label,
+    link_url: s.link_url, image_url: s.image_url, is_gold: s.is_gold,
+  }));
+  const perks = (perkRows ?? []).map((p) => ({ ...p, Icon: PERK_ICON_MAP[p.icon_name] ?? Wallet }));
 
   const listingIds = (featuredListings ?? []).map((l) => l.id);
   const courseIds = (featuredCourses ?? []).map((c) => c.id);
@@ -102,29 +108,27 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar userRole={userRole} userEmail={user?.email ?? null} />
-      <AdCarousel />
+      <AdCarousel slides={slides} />
 
       <main className="flex-1">
         <section className="hero-gradient text-white">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20 text-center relative">
             <div className="inline-flex items-center gap-2 rounded-full bg-gold-400/20 backdrop-blur px-4 py-1.5 text-xs font-semibold text-gold-200 mb-6 border border-gold-300/30">
-              <Wallet className="h-3.5 w-3.5" /> Free to list — keep up to 70% of every sale
+              <Wallet className="h-3.5 w-3.5" /> {content.hero_badge_text}
             </div>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
-              Got a skill, a course, or a license to sell?<br className="hidden sm:block" />{" "}
-              <span className="text-gold-300">Start earning today.</span>
+              {content.hero_headline_main}<br className="hidden sm:block" />{" "}
+              <span className="text-gold-300">{content.hero_headline_accent}</span>
             </h1>
             <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-8">
-              Digital Mart gets you in front of real buyers, holds every payment in
-              escrow until delivery is confirmed, and pays you directly via UPI —
-              no gateway, no waiting on someone else's payout schedule.
+              {content.hero_subtext}
             </p>
             <div className="flex items-center justify-center gap-3 mb-10 flex-wrap">
               <Link href="/dashboard" className="btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 py-3 px-6 font-bold">
-                Start Selling — It's Free <ArrowRight className="h-4 w-4" />
+                {content.hero_cta_primary_label} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="/listings" className="btn-ghost text-white hover:bg-white/10 py-3 px-6">
-                Browse Marketplace
+                {content.hero_cta_secondary_label}
               </Link>
             </div>
             <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap">
@@ -144,21 +148,21 @@ export default async function HomePage() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
             <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
               <div>
-                <h2 className="text-2xl font-bold">Why sell on Digital Mart</h2>
-                <p className="text-blue-200 text-sm mt-1">Everything you need to turn a skill or a license into income.</p>
+                <h2 className="text-2xl font-bold">{content.perks_section_title}</h2>
+                <p className="text-blue-200 text-sm mt-1">{content.perks_section_subtitle}</p>
               </div>
               <Link href="/dashboard" className="btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5 shrink-0">
                 Start Selling <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {SELLER_PERKS.map((p) => (
-                <div key={p.title} className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              {perks.map((p) => (
+                <div key={p.id} className="rounded-2xl bg-white/5 border border-white/10 p-5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-400/15 mb-3">
-                    <p.icon className="h-5 w-5 text-gold-300" />
+                    <p.Icon className="h-5 w-5 text-gold-300" />
                   </div>
                   <h3 className="font-bold mb-1">{p.title}</h3>
-                  <p className="text-sm text-blue-200 leading-relaxed">{p.desc}</p>
+                  <p className="text-sm text-blue-200 leading-relaxed">{p.description}</p>
                 </div>
               ))}
             </div>
@@ -229,7 +233,7 @@ export default async function HomePage() {
               {(categories as ListingCategory[] | null)?.map((c) => (
                 <Link key={c.slug} href={`/listings?category=${c.slug}`} className="card p-5 text-center hover:-translate-y-0.5 block">
                   <p className="text-2xl mb-2.5">
-                    {CATEGORY_ICONS[c.slug] ?? "📦"}
+                    {c.icon ?? "📦"}
                   </p>
                   <p className="text-sm font-medium text-gray-700">{c.name}</p>
                 </Link>

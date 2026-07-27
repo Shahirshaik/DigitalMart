@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { Badge } from "@/components/ui/Badge";
-import { formatPrice, CATEGORY_ICONS, DELIVERY_LABELS, timeAgo, buildWhatsAppLink } from "@/lib/utils";
+import { formatPrice, DELIVERY_LABELS, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { getBrandVisual } from "@/lib/brandIcons";
 import { createListingOrder } from "@/app/checkout/actions";
 import type { AccountRole } from "@/types/database";
@@ -66,7 +66,7 @@ export default async function ListingDetailPage({ params }: Props) {
       .limit(4),
   ]);
 
-  const icon = CATEGORY_ICONS[listing.category?.slug ?? "other"] ?? "📦";
+  const icon = listing.category?.icon ?? "📦";
   const brand = getBrandVisual(listing.title);
   const whatsappLink = listing.seller?.phone && listing.seller?.whatsapp_enabled
     ? buildWhatsAppLink(listing.seller.phone, `Hi, I'm interested in your listing "${listing.title}" on Digital Mart.`)

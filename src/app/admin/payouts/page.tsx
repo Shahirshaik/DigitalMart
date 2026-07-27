@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { formatPrice, formatMoney, timeAgo, buildWhatsAppLink } from "@/lib/utils";
+import { getSupportContact } from "@/lib/siteContent";
 import { markWithdrawalSent } from "../actions";
 import type { AccountRole } from "@/types/database";
 
@@ -15,6 +16,7 @@ const ADMIN_TABS = [
   { href: "/admin/sellers", label: "Seller Verification" },
   { href: "/admin/disputes", label: "Disputes" },
   { href: "/admin/payouts", label: "Payouts" },
+  { href: "/admin/content", label: "Site Content" },
 ];
 
 export default async function AdminPayoutsPage() {
@@ -26,6 +28,7 @@ export default async function AdminPayoutsPage() {
 
   const { data: queue } = await supabase.from("v_admin_withdrawal_queue").select("*");
   const totalOwed = (queue ?? []).reduce((sum, q) => sum + Number(q.amount), 0);
+  const { whatsappNumber: supportWhatsAppNumber } = await getSupportContact();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -63,7 +66,7 @@ export default async function AdminPayoutsPage() {
                 {queue.map((q) => {
                   const waLink = q.payout_upi_id
                     ? null
-                    : buildWhatsAppLink("+91 9010731398", `Hi ${q.seller_name}, could you share your UPI ID so we can send your ₹${q.amount} withdrawal?`);
+                    : buildWhatsAppLink(supportWhatsAppNumber, `Hi ${q.seller_name}, could you share your UPI ID so we can send your ₹${q.amount} withdrawal?`);
                   return (
                     <div key={q.request_id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
                       <div className="flex items-center justify-between gap-3 mb-1">

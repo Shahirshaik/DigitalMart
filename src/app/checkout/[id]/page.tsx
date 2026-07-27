@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { RatingInput } from "@/components/ui/RatingInput";
 import { formatPrice, buildWhatsAppLink } from "@/lib/utils";
 import { buildUpiLink, UPI_ID, UPI_PAYEE_NAME } from "@/lib/payment";
+import { getSupportContact } from "@/lib/siteContent";
 import { markOrderPaid, raiseDispute, submitReview } from "../actions";
 import type { AccountRole } from "@/types/database";
 
@@ -49,6 +50,8 @@ export default async function CheckoutPage({ params }: Props) {
   const sellerWaLink = order.seller?.phone
     ? buildWhatsAppLink(order.seller.phone, `Hi ${order.seller?.full_name}, this is Digital Mart following up on order (${id.slice(0, 8)}) for "${itemTitle}".`)
     : null;
+
+  const { whatsappNumber: supportWhatsAppNumber } = await getSupportContact();
 
   const [{ data: existingReview }, { data: dispute }] = await Promise.all([
     isBuyer && targetId
@@ -145,7 +148,7 @@ export default async function CheckoutPage({ params }: Props) {
               )}
               {isBuyer && (() => {
                 const nudgeLink = buildWhatsAppLink(
-                  "+91 9010731398",
+                  supportWhatsAppNumber,
                   `Hi, I just paid for order ${id.slice(0, 8)} ("${itemTitle}") — could you help speed up confirmation?`
                 );
                 return nudgeLink && (
@@ -175,7 +178,7 @@ export default async function CheckoutPage({ params }: Props) {
               </p>
               {(() => {
                 const bridgeLink = buildWhatsAppLink(
-                  "+91 9010731398",
+                  supportWhatsAppNumber,
                   `Hi, I'd like help resolving a dispute on order ${id}. ${dispute?.reason ? `Reason: "${dispute.reason}"` : ""}`
                 );
                 return bridgeLink && (

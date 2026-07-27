@@ -77,7 +77,7 @@ CREATE TABLE listing_categories (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   slug          TEXT NOT NULL UNIQUE,
   name          TEXT NOT NULL,
-  icon          TEXT NOT NULL DEFAULT 'ti-tag',
+  icon          TEXT NOT NULL DEFAULT '📦',   -- emoji shown on home page/browse filters; admin-editable (see Section 9)
   sort_order    SMALLINT NOT NULL DEFAULT 0,
   is_active     BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1124,3 +1124,108 @@ create policy "listing_images_owner_update" on storage.objects
 create policy "listing_images_owner_delete" on storage.objects
   for delete to authenticated
   using (bucket_id = 'listing-images' and (storage.foldername(name))[1] = auth.uid()::text);
+
+
+-- ============================================================
+-- SECTION 9 : SITE CONTENT MANAGEMENT (admin-editable marketing content)
+-- ============================================================
+-- Lets the admin edit homepage marketing copy, the ad carousel, seller perk
+-- cards, category icons, contact info, and Terms/Privacy body text from
+-- /admin/content — no code change or redeploy needed. Deliberately scoped to
+-- marketing/business content only; functional UI text (button labels, form
+-- hints, error messages) stays hardcoded in components.
+
+CREATE TABLE site_content (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+CREATE POLICY site_content_select ON site_content FOR SELECT USING (TRUE);
+CREATE POLICY site_content_admin_all ON site_content FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+
+INSERT INTO site_content (key, value) VALUES
+  ('hero_badge_text', 'Free to list — keep up to 70% of every sale'),
+  ('hero_headline_main', 'Got a skill, a course, or a license to sell?'),
+  ('hero_headline_accent', 'Start earning today.'),
+  ('hero_subtext', 'Digital Mart gets you in front of real buyers, holds every payment in escrow until delivery is confirmed, and pays you directly via UPI — no gateway, no waiting on someone else''s payout schedule.'),
+  ('hero_cta_primary_label', 'Start Selling — It''s Free'),
+  ('hero_cta_secondary_label', 'Browse Marketplace'),
+  ('perks_section_title', 'Why sell on Digital Mart'),
+  ('perks_section_subtitle', 'Everything you need to turn a skill or a license into income.'),
+  ('support_whatsapp_number', '+91 9010731398'),
+  ('support_email', 'digitalmartbuysell@gmail.com')
+ON CONFLICT (key) DO NOTHING;
+
+-- Home page ad carousel — image, headline, link, and CTA all editable.
+CREATE TABLE ad_slides (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  image_url     TEXT,
+  title         TEXT NOT NULL,
+  description   TEXT NOT NULL,
+  cta_label     TEXT NOT NULL,
+  link_url      TEXT NOT NULL,
+  is_gold       BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order    SMALLINT NOT NULL DEFAULT 0,
+  is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE ad_slides ENABLE ROW LEVEL SECURITY;
+CREATE POLICY ad_slides_select ON ad_slides FOR SELECT USING (is_active = TRUE OR is_admin());
+CREATE POLICY ad_slides_admin_all ON ad_slides FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+CREATE TRIGGER trg_ad_slides_updated BEFORE UPDATE ON ad_slides FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+INSERT INTO ad_slides (title, description, cta_label, link_url, is_gold, sort_order) VALUES
+  ('Sell What You Know or Own', 'Post software keys, subscriptions, or a course in minutes — free to list, keep up to 70% of every sale.', 'Start Selling — It''s Free', '/dashboard', TRUE, 0),
+  ('Escrow-Backed Trust on Every Order', 'Your payment is held until you confirm delivery — no risk buying from strangers online.', 'Browse Marketplace', '/listings', FALSE, 1),
+  ('Learn In-Demand Skills', 'Courses and guided paths from verified instructors, at a fraction of institute pricing.', 'Explore Courses', '/courses', FALSE, 2);
+
+-- Homepage "Why sell" perk cards — icon_name must match a key in
+-- PERK_ICON_MAP (src/lib/perkIcons.tsx), a small fixed set of Lucide icons.
+CREATE TABLE homepage_perks (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  icon_name   TEXT NOT NULL DEFAULT 'wallet',
+  title       TEXT NOT NULL,
+  description TEXT NOT NULL,
+  sort_order  SMALLINT NOT NULL DEFAULT 0,
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE homepage_perks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY homepage_perks_select ON homepage_perks FOR SELECT USING (is_active = TRUE OR is_admin());
+CREATE POLICY homepage_perks_admin_all ON homepage_perks FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+CREATE TRIGGER trg_homepage_perks_updated BEFORE UPDATE ON homepage_perks FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+INSERT INTO homepage_perks (icon_name, title, description, sort_order) VALUES
+  ('wallet', 'Keep up to 70%', 'Free to list — a platform fee only applies once you actually make a sale.', 0),
+  ('zap', 'Get paid directly', 'Buyers pay you via UPI. No payment gateway holding your money hostage.', 1),
+  ('megaphone', 'Reach real buyers', 'Your listing goes straight in front of everyone browsing the marketplace.', 2),
+  ('store', 'Sell anything digital', 'Software keys, subscriptions, guides, or a full course — one storefront.', 3);
+
+-- Terms/Privacy pages as an ordered list of heading+body sections per page —
+-- preserves the numbered-section layout while being editable. See seed
+-- migration add_site_content_management for the full initial section text.
+CREATE TABLE legal_sections (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  page        TEXT NOT NULL CHECK (page IN ('terms', 'privacy')),
+  sort_order  SMALLINT NOT NULL DEFAULT 0,
+  heading     TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_legal_sections_page ON legal_sections (page, sort_order);
+
+ALTER TABLE legal_sections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY legal_sections_select ON legal_sections FOR SELECT USING (TRUE);
+CREATE POLICY legal_sections_admin_all ON legal_sections FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+CREATE TRIGGER trg_legal_sections_updated BEFORE UPDATE ON legal_sections FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+-- listing_categories.icon (Section 2) is also managed from this same admin
+-- page — repurposed from an earlier, never-rendered icon-font-class design
+-- to hold the actual emoji shown on the home page and browse filters.

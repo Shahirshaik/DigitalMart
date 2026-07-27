@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
-import { CATEGORY_ICONS, DELIVERY_LABELS } from "@/lib/utils";
+import { DELIVERY_LABELS } from "@/lib/utils";
 import type { AccountRole, ListingFull, ListingCategory } from "@/types/database";
 
 interface Props {
@@ -149,7 +149,7 @@ export default async function ListingsPage({ searchParams }: Props) {
                         className={"flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors " + (
                           params.category === c.slug ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-600 hover:bg-gray-50"
                         )}>
-                        <span>{CATEGORY_ICONS[c.slug] ?? "📦"}</span> {c.name}
+                        <span>{c.icon ?? "📦"}</span> {c.name}
                       </Link>
                     </li>
                   ))}

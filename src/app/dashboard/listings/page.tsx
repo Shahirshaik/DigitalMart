@@ -4,7 +4,7 @@ import { Plus, Pencil, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { formatPrice, CATEGORY_ICONS, LISTING_STATUS_COLORS } from "@/lib/utils";
+import { formatPrice, LISTING_STATUS_COLORS } from "@/lib/utils";
 import { toggleListingStatus } from "@/app/dashboard/actions";
 import type { AccountRole } from "@/types/database";
 
@@ -47,7 +47,7 @@ export default async function MyListingsPage() {
             <div className="space-y-3">
               {listings.map((l) => (
                 <div key={l.id} className="card p-4 flex items-center gap-3">
-                  <span className="text-2xl shrink-0">{CATEGORY_ICONS[l.category?.slug ?? ""] ?? "📦"}</span>
+                  <span className="text-2xl shrink-0">{l.category?.icon ?? "📦"}</span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 truncate">{l.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">

@@ -14,6 +14,7 @@ const ADMIN_TABS = [
   { href: "/admin/sellers", label: "Seller Verification" },
   { href: "/admin/disputes", label: "Disputes" },
   { href: "/admin/payouts", label: "Payouts" },
+  { href: "/admin/content", label: "Site Content" },
 ];
 
 export default async function AdminOverviewPage() {
@@ -40,7 +41,7 @@ export default async function AdminOverviewPage() {
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("is_seller", true).is("seller_verified_at", null),
     supabase.from("disputes").select("*", { count: "exact", head: true }).in("status", ["open", "under_review"]),
-    supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "released").is("payout_sent_at", null),
+    supabase.from("wallet_transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawn").is("fulfilled_at", null),
     supabase.from("orders").select("amount").eq("status", "released"),
     supabase.from("v_admin_category_performance").select("*").limit(7),
   ]);
@@ -55,7 +56,7 @@ export default async function AdminOverviewPage() {
     { icon: TrendingUp, label: "Lifetime GMV", value: formatMoney(gmv) },
     { icon: ShieldCheck, label: "Sellers awaiting verification", value: pendingSellerCount ?? 0, href: "/admin/sellers" },
     { icon: AlertTriangle, label: "Open disputes", value: openDisputeCount ?? 0, href: "/admin/disputes" },
-    { icon: Wallet, label: "Payouts to send", value: awaitingPayoutCount ?? 0, href: "/admin/payouts" },
+    { icon: Wallet, label: "Withdrawals to send", value: awaitingPayoutCount ?? 0, href: "/admin/payouts" },
   ];
 
   return (
