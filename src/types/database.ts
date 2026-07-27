@@ -1,4 +1,4 @@
-export type AccountRole    = "user" | "admin";
+export type AccountRole    = "user" | "admin" | "manager";
 export type UserCategory   = "student" | "experienced_professional" | "career_gap";
 export type SkillLevel     = "beginner" | "intermediate" | "advanced";
 export type LearningFormat = "self_paced" | "live_mentorship" | "guided_path";
@@ -15,6 +15,7 @@ export type DisputeStatus = "open" | "under_review" | "resolved_buyer" | "resolv
 
 export type SellerBadgeType = "verified_id" | "top_seller" | "fast_responder";
 export type LeadStatus      = "new" | "contacted" | "converted";
+export type ProductRequestStatus = "new" | "contacted" | "fulfilled" | "declined";
 
 export type ViolationType   = "phone" | "email" | "external_link" | "social_handle";
 export type ViolationAction = "warning" | "mute" | "suspension";

@@ -10,20 +10,22 @@ import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "Seller Verification | Admin" };
 
-const ADMIN_TABS = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/sellers", label: "Seller Verification" },
-  { href: "/admin/disputes", label: "Disputes" },
-  { href: "/admin/payouts", label: "Payouts" },
-  { href: "/admin/content", label: "Site Content" },
-];
-
 export default async function AdminSellersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/admin/sellers");
   const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") redirect("/");
+  if (profile?.role !== "admin" && profile?.role !== "manager") redirect("/");
+  const isAdmin = profile.role === "admin";
+
+  const ADMIN_TABS = [
+    { href: "/admin", label: "Overview" },
+    { href: "/admin/members", label: "Members" },
+    { href: "/admin/sellers", label: "Seller Verification" },
+    { href: "/admin/disputes", label: "Disputes" },
+    { href: "/admin/requests", label: "Requests" },
+    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }] : []),
+  ];
 
   const [{ data: pending }, { data: verified }] = await Promise.all([
     supabase.from("users").select("id, full_name, email, created_at").eq("is_seller", true).is("seller_verified_at", null).order("created_at", { ascending: true }),

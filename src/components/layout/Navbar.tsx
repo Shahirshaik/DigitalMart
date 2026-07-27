@@ -27,6 +27,7 @@ interface NotificationRow {
 const NAV_LINKS = [
   { href: "/listings", label: "Marketplace" },
   { href: "/courses",  label: "Courses" },
+  { href: "/requests", label: "Request a Product" },
 ];
 
 function notificationHref(n: NotificationRow): string {
@@ -166,7 +167,7 @@ export function Navbar({ userRole, userEmail }: Props) {
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                     <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white border border-gray-100 shadow-xl py-1.5 z-20">
-                      {userRole === "admin" && (
+                      {(userRole === "admin" || userRole === "manager") && (
                         <Link href="/admin" onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition-colors">
                           <LayoutDashboard className="h-4 w-4" /> Admin Panel

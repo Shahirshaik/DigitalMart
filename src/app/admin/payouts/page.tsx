@@ -13,10 +13,13 @@ export const metadata = { title: "Withdrawal Requests | Admin" };
 
 const ADMIN_TABS = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/members", label: "Members" },
   { href: "/admin/sellers", label: "Seller Verification" },
   { href: "/admin/disputes", label: "Disputes" },
+  { href: "/admin/requests", label: "Requests" },
   { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/content", label: "Site Content" },
+  { href: "/admin/team", label: "Team" },
 ];
 
 export default async function AdminPayoutsPage() {

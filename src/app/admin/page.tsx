@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Users, ShoppingBag, GraduationCap, TrendingUp, ShieldCheck, AlertTriangle, Wallet } from "lucide-react";
+import { Users, ShoppingBag, GraduationCap, TrendingUp, ShieldCheck, AlertTriangle, Wallet, MessageSquarePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -9,20 +9,22 @@ import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "Admin Panel" };
 
-const ADMIN_TABS = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/sellers", label: "Seller Verification" },
-  { href: "/admin/disputes", label: "Disputes" },
-  { href: "/admin/payouts", label: "Payouts" },
-  { href: "/admin/content", label: "Site Content" },
-];
-
 export default async function AdminOverviewPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/admin");
   const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") redirect("/");
+  if (profile?.role !== "admin" && profile?.role !== "manager") redirect("/");
+  const isAdmin = profile.role === "admin";
+
+  const ADMIN_TABS = [
+    { href: "/admin", label: "Overview" },
+    { href: "/admin/members", label: "Members" },
+    { href: "/admin/sellers", label: "Seller Verification" },
+    { href: "/admin/disputes", label: "Disputes" },
+    { href: "/admin/requests", label: "Requests" },
+    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }] : []),
+  ];
 
   const [
     { count: userCount },
@@ -32,6 +34,7 @@ export default async function AdminOverviewPage() {
     { count: pendingSellerCount },
     { count: openDisputeCount },
     { count: awaitingPayoutCount },
+    { count: newRequestCount },
     { data: gmvRow },
     { data: categories },
   ] = await Promise.all([
@@ -42,6 +45,7 @@ export default async function AdminOverviewPage() {
     supabase.from("users").select("*", { count: "exact", head: true }).eq("is_seller", true).is("seller_verified_at", null),
     supabase.from("disputes").select("*", { count: "exact", head: true }).in("status", ["open", "under_review"]),
     supabase.from("wallet_transactions").select("*", { count: "exact", head: true }).eq("type", "withdrawn").is("fulfilled_at", null),
+    supabase.from("product_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
     supabase.from("orders").select("amount").eq("status", "released"),
     supabase.from("v_admin_category_performance").select("*").limit(7),
   ]);
@@ -49,14 +53,15 @@ export default async function AdminOverviewPage() {
   const gmv = (gmvRow ?? []).reduce((sum, o) => sum + Number(o.amount), 0);
 
   const STATS = [
-    { icon: Users, label: "Total members", value: userCount ?? 0 },
-    { icon: Users, label: "Active members", value: activeUserCount ?? 0 },
+    { icon: Users, label: "Total members", value: userCount ?? 0, href: "/admin/members" },
+    { icon: Users, label: "Active members", value: activeUserCount ?? 0, href: "/admin/members" },
     { icon: ShoppingBag, label: "Active listings", value: listingCount ?? 0 },
     { icon: GraduationCap, label: "Active courses", value: courseCount ?? 0 },
     { icon: TrendingUp, label: "Lifetime GMV", value: formatMoney(gmv) },
     { icon: ShieldCheck, label: "Sellers awaiting verification", value: pendingSellerCount ?? 0, href: "/admin/sellers" },
     { icon: AlertTriangle, label: "Open disputes", value: openDisputeCount ?? 0, href: "/admin/disputes" },
-    { icon: Wallet, label: "Withdrawals to send", value: awaitingPayoutCount ?? 0, href: "/admin/payouts" },
+    { icon: MessageSquarePlus, label: "New product requests", value: newRequestCount ?? 0, href: "/admin/requests" },
+    ...(isAdmin ? [{ icon: Wallet, label: "Withdrawals to send", value: awaitingPayoutCount ?? 0, href: "/admin/payouts" }] : []),
   ];
 
   return (

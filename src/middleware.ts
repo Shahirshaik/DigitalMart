@@ -24,14 +24,27 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  // Protect /admin — admin only
+  // Deactivated accounts are signed out and blocked everywhere except the
+  // sign-in flow itself, so a suspicious/banned user can't keep using the app.
+  if (user && !path.startsWith("/auth/") && path !== "/") {
+    const { data: activeCheck } = await supabase
+      .from("users").select("is_active").eq("id", user.id).single();
+    if (activeCheck && activeCheck.is_active === false) {
+      await supabase.auth.signOut();
+      const resp = NextResponse.redirect(new URL("/auth/login?deactivated=1", request.url));
+      supabaseResponse.cookies.getAll().forEach((c) => resp.cookies.set(c.name, c.value));
+      return resp;
+    }
+  }
+
+  // Protect /admin — admin and manager
   if (path.startsWith("/admin")) {
     if (!user) {
       return NextResponse.redirect(new URL("/auth/login?next=/admin", request.url));
     }
     const { data: profile } = await supabase
       .from("users").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "admin" && profile?.role !== "manager") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

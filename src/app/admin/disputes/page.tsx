@@ -10,20 +10,22 @@ import type { AccountRole } from "@/types/database";
 
 export const metadata = { title: "Disputes | Admin" };
 
-const ADMIN_TABS = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/sellers", label: "Seller Verification" },
-  { href: "/admin/disputes", label: "Disputes" },
-  { href: "/admin/payouts", label: "Payouts" },
-  { href: "/admin/content", label: "Site Content" },
-];
-
 export default async function AdminDisputesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/admin/disputes");
   const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") redirect("/");
+  if (profile?.role !== "admin" && profile?.role !== "manager") redirect("/");
+  const isAdmin = profile.role === "admin";
+
+  const ADMIN_TABS = [
+    { href: "/admin", label: "Overview" },
+    { href: "/admin/members", label: "Members" },
+    { href: "/admin/sellers", label: "Seller Verification" },
+    { href: "/admin/disputes", label: "Disputes" },
+    { href: "/admin/requests", label: "Requests" },
+    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }] : []),
+  ];
 
   const { data: disputes } = await supabase.from("v_admin_dispute_queue").select("*");
 
