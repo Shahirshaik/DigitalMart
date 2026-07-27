@@ -157,7 +157,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               </div>
             </aside>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="lg:hidden flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
                 <Link href={buildUrl({ category: undefined, page: undefined })}
                   className={"shrink-0 badge " + (!params.category ? "bg-brand-600 text-white" : "bg-white border border-gray-200 text-gray-600")}>

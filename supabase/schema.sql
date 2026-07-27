@@ -778,6 +778,27 @@ CREATE TRIGGER trg_prevent_self_role_escalation
   BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION prevent_self_role_escalation();
 
+-- Trigger-only functions — like handle_new_user() above, none of these are meant
+-- to be called directly via the PostgREST RPC API (Postgres already blocks a
+-- RETURNS TRIGGER function from being invoked outside trigger context, but the
+-- Supabase security linter flags the EXECUTE grant as an exposed endpoint, so
+-- revoke it explicitly for defense in depth).
+REVOKE EXECUTE ON FUNCTION credit_referral_on_confirm() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION sync_wallet_balance() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION award_seller_badges() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION prevent_self_role_escalation() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION set_order_escrow_timestamps() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION notify_dispute_opened() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION notify_withdrawal_requested() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION notify_admin_order_created() FROM PUBLIC, anon, authenticated;
+
+-- auto_release_overdue_orders() is NOT a trigger — it's a plain callable function
+-- meant to run only from /api/cron/auto-release (which now uses a service-role
+-- client, see src/lib/supabase/service.ts, gated by CRON_SECRET at the HTTP layer).
+-- It used to be reachable by anyone via /rest/v1/rpc/auto_release_overdue_orders
+-- as anon/authenticated — revoke that.
+REVOKE EXECUTE ON FUNCTION auto_release_overdue_orders() FROM PUBLIC, anon, authenticated;
+
 
 -- ============================================================
 -- SECTION 4 : ROW LEVEL SECURITY

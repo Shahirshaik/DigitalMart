@@ -24,7 +24,7 @@ export function CourseCard({ course, index = 0, rating, reviewCount, enrollCount
 
   return (
     <Link href={`/courses/${course.id}`}
-      className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all min-w-0">
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {course.thumbnail_url ? (
           <img src={course.thumbnail_url} alt={course.title} className="h-full w-full object-cover" />

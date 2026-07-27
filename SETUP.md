@@ -43,6 +43,19 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key-here
 ```
 
+**Required in production (Vercel project env vars) for the auto-release cron to work:**
+
+```
+SUPABASE_SERVICE_ROLE_KEY=...   # Supabase dashboard → Project Settings → API → service_role key
+CRON_SECRET=...                 # any strong random string you generate yourself
+```
+
+`/api/cron/auto-release` (runs nightly per `vercel.json`) now fails closed with a 401
+if `CRON_SECRET` isn't set — this replaced an earlier version that silently allowed
+unauthenticated requests through. Vercel automatically sends `CRON_SECRET` as the
+`Authorization: Bearer` header when it invokes the route, so once the env var is set
+there's nothing else to wire up. Never commit either value.
+
 ---
 
 ## Step 3 — Install & Run

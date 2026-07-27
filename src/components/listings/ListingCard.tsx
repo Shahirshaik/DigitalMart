@@ -27,7 +27,7 @@ export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) 
 
   return (
     <Link href={`/listings/${listing.id}`}
-      className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all min-w-0">
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {listing.images?.[0] ? (
           <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
