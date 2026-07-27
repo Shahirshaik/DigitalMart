@@ -11,6 +11,7 @@ export interface Slide {
   cta_label: string;
   link_url: string;
   image_url: string | null;
+  image_url_mobile: string | null;
   is_gold: boolean;
 }
 
@@ -42,16 +43,22 @@ export function AdCarousel({ slides }: Props) {
       <div className="relative h-64 sm:h-72">
         {slides.map((slide, i) => {
           const hasText = Boolean(slide.title || slide.description);
+          const desktopImg = slide.image_url || slide.image_url_mobile;
+          const mobileImg = slide.image_url_mobile || slide.image_url;
+          const hasImage = Boolean(desktopImg || mobileImg);
           return (
             <div
               key={slide.id}
-              className={`absolute inset-0 ${slide.image_url ? "bg-gray-950" : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              className={`absolute inset-0 ${hasImage ? "bg-gray-950" : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             >
-              {slide.image_url ? (
+              {hasImage ? (
                 <>
-                  {/* Full poster shown uncropped — letterboxed, not cover-cropped, since
-                      an uploaded ad creative often carries its own baked-in text/layout. */}
-                  <img src={slide.image_url} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                  {/* Separate mobile vs desktop/tablet crop — a wide banner image and a
+                      tall phone viewport rarely look right from a single source image.
+                      Shown uncropped (object-contain), since an uploaded ad creative
+                      often carries its own baked-in text/layout. */}
+                  {mobileImg && <img src={mobileImg} alt="" className="absolute inset-0 h-full w-full object-contain sm:hidden" />}
+                  {desktopImg && <img src={desktopImg} alt="" className="absolute inset-0 h-full w-full object-contain hidden sm:block" />}
                   {/* Bottom scrim keeps the CTA legible over any image content behind it. */}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
                 </>
@@ -59,11 +66,11 @@ export function AdCarousel({ slides }: Props) {
                 <Megaphone className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
               )}
               <div className={`relative mx-auto max-w-6xl h-full px-12 sm:px-16 flex text-white ${
-                slide.image_url
+                hasImage
                   ? "items-end justify-center pb-4"
                   : "flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-center md:text-left"
               }`}>
-                <div className={`flex flex-col items-center ${slide.image_url ? "" : "md:items-start max-w-xl"}`}>
+                <div className={`flex flex-col items-center ${hasImage ? "" : "md:items-start max-w-xl"}`}>
                   {hasText && <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>}
                   {hasText && <p className="text-sm sm:text-base text-white/85 mb-5">{slide.description}</p>}
                   <Link href={slide.link_url} className={slide.is_gold

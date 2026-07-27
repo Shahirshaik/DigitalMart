@@ -4,7 +4,7 @@ import { Trash2, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { ImageUploader } from "@/components/ui/ImageUploader";
+import { ImageCropUploader } from "@/components/ui/ImageCropUploader";
 import { PERK_ICON_NAMES } from "@/lib/perkIcons";
 import {
   updateSiteContent, upsertAdSlide, deleteAdSlide, upsertPerk, deletePerk,
@@ -144,7 +144,10 @@ export default async function AdminContentPage() {
                   </summary>
                   <form action={upsertAdSlide} className="mt-4 space-y-3">
                     <input type="hidden" name="id" value={s.id} />
-                    <ImageUploader name="image_url" defaultValue={s.image_url} label="Slide image (optional — falls back to gradient + icon)" />
+                    <ImageCropUploader name="image_url" defaultValue={s.image_url} aspect={3}
+                      label="Desktop/tablet image (optional — falls back to gradient + icon)" />
+                    <ImageCropUploader name="image_url_mobile" defaultValue={s.image_url_mobile} aspect={1.5}
+                      label="Mobile image (optional — falls back to the image above)" />
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Title (leave blank if your image already has its own headline)</label>
                       <input name="title" defaultValue={s.title} className="input" />
@@ -195,7 +198,8 @@ export default async function AdminContentPage() {
                 <Plus className="h-3.5 w-3.5" /> Add new slide
               </summary>
               <form action={upsertAdSlide} className="mt-4 space-y-3">
-                <ImageUploader name="image_url" label="Slide image (optional)" />
+                <ImageCropUploader name="image_url" aspect={3} label="Desktop/tablet image (optional)" />
+                <ImageCropUploader name="image_url_mobile" aspect={1.5} label="Mobile image (optional — falls back to the image above)" />
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Title (leave blank if your image already has its own headline)</label>
                   <input name="title" className="input" />

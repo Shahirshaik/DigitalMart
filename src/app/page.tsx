@@ -79,7 +79,7 @@ export default async function HomePage() {
   const content = Object.fromEntries((contentRows ?? []).map((r) => [r.key, r.value]));
   const slides = (slideRows ?? []).map((s) => ({
     id: s.id, title: s.title, description: s.description, cta_label: s.cta_label,
-    link_url: s.link_url, image_url: s.image_url, is_gold: s.is_gold,
+    link_url: s.link_url, image_url: s.image_url, image_url_mobile: s.image_url_mobile, is_gold: s.is_gold,
   }));
   const perks = (perkRows ?? []).map((p) => ({ ...p, Icon: PERK_ICON_MAP[p.icon_name] ?? Wallet }));
 

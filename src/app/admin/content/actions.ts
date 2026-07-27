@@ -45,6 +45,7 @@ export async function upsertAdSlide(formData: FormData) {
     cta_label: String(formData.get("cta_label") ?? ""),
     link_url: String(formData.get("link_url") ?? ""),
     image_url: (formData.get("image_url") as string) || null,
+    image_url_mobile: (formData.get("image_url_mobile") as string) || null,
     is_gold: formData.get("is_gold") === "on",
     sort_order: Number(formData.get("sort_order") ?? 0),
     is_active: formData.get("is_active") === "on",

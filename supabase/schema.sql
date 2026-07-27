@@ -1159,18 +1159,22 @@ INSERT INTO site_content (key, value) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- Home page ad carousel — image, headline, link, and CTA all editable.
+-- title/description may be '' (not just non-empty) — a self-contained ad
+-- creative with its own baked-in headline/copy doesn't need a second one
+-- overlaid by the carousel (see AdCarousel.tsx's hasText check).
 CREATE TABLE ad_slides (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  image_url     TEXT,
-  title         TEXT NOT NULL,
-  description   TEXT NOT NULL,
-  cta_label     TEXT NOT NULL,
-  link_url      TEXT NOT NULL,
-  is_gold       BOOLEAN NOT NULL DEFAULT FALSE,
-  sort_order    SMALLINT NOT NULL DEFAULT 0,
-  is_active     BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  image_url         TEXT,   -- desktop/tablet image; also mobile fallback if image_url_mobile is NULL
+  image_url_mobile  TEXT,   -- optional separate crop for narrow viewports; falls back to image_url
+  title             TEXT NOT NULL,
+  description       TEXT NOT NULL,
+  cta_label         TEXT NOT NULL,
+  link_url          TEXT NOT NULL,
+  is_gold           BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order        SMALLINT NOT NULL DEFAULT 0,
+  is_active         BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE ad_slides ENABLE ROW LEVEL SECURITY;
