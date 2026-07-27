@@ -29,6 +29,7 @@ export default async function AdminTeamPage({ searchParams }: Props) {
     { href: "/admin/payouts", label: "Payouts" },
     { href: "/admin/content", label: "Site Content" },
     { href: "/admin/team", label: "Team" },
+    { href: "/admin/audit", label: "Audit Log" },
   ];
 
   const { data: managers } = await supabase.from("users")

@@ -24,7 +24,7 @@ export default async function AdminDisputesPage() {
     { href: "/admin/sellers", label: "Seller Verification" },
     { href: "/admin/disputes", label: "Disputes" },
     { href: "/admin/requests", label: "Requests" },
-    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }] : []),
+    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }, { href: "/admin/audit", label: "Audit Log" }] : []),
   ];
 
   const { data: disputes } = await supabase.from("v_admin_dispute_queue").select("*");

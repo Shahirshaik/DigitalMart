@@ -23,6 +23,7 @@ const ADMIN_TABS = [
   { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/content", label: "Site Content" },
   { href: "/admin/team", label: "Team" },
+  { href: "/admin/audit", label: "Audit Log" },
 ];
 
 export default async function AdminContentPage() {

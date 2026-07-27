@@ -25,8 +25,21 @@ async function requireStaff() {
   return { supabase, staffId: user.id };
 }
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+async function logAudit(
+  supabase: Supabase,
+  actorId: string,
+  action: string,
+  targetType: string,
+  targetId: string | null,
+  details: Record<string, unknown> | null = null
+) {
+  await supabase.from("admin_audit_log").insert({ actor_id: actorId, action, target_type: targetType, target_id: targetId, details });
+}
+
 export async function verifySeller(sellerId: string) {
-  const { supabase } = await requireStaff();
+  const { supabase, staffId } = await requireStaff();
   const { error } = await supabase.from("users").update({ seller_verified_at: new Date().toISOString() }).eq("id", sellerId);
   if (error) throw new Error(error.message);
 
@@ -37,6 +50,7 @@ export async function verifySeller(sellerId: string) {
     type: "info",
   });
 
+  await logAudit(supabase, staffId, "seller.verify", "user", sellerId);
   revalidatePath("/admin/sellers");
 }
 
@@ -68,11 +82,12 @@ export async function resolveDispute(disputeId: string, orderId: string, resolut
     ]);
   }
 
+  await logAudit(supabase, staffId, "dispute.resolve", "dispute", disputeId, { resolution, order_id: orderId, notes: notes || null });
   revalidatePath("/admin/disputes");
 }
 
 export async function markWithdrawalSent(requestId: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase, adminId } = await requireAdmin();
 
   const { data: request, error } = await supabase.from("wallet_transactions")
     .update({ fulfilled_at: new Date().toISOString() })
@@ -94,19 +109,33 @@ export async function markWithdrawalSent(requestId: string) {
     });
   }
 
+  await logAudit(supabase, adminId, "payout.mark_sent", "wallet_transaction", requestId, request ? { user_id: request.user_id, amount: request.amount } : null);
   revalidatePath("/admin/payouts");
   revalidatePath("/wallet");
 }
 
 export async function toggleUserActive(userId: string, nextActive: boolean) {
-  const { supabase } = await requireStaff();
+  const { supabase, staffId } = await requireStaff();
   const { error } = await supabase.from("users").update({ is_active: nextActive }).eq("id", userId);
   if (error) throw new Error(error.message);
+  await logAudit(supabase, staffId, nextActive ? "user.reactivate" : "user.deactivate", "user", userId);
+  revalidatePath("/admin/members");
+}
+
+export async function bulkSetUserActive(nextActive: boolean, formData: FormData) {
+  const { supabase, staffId } = await requireStaff();
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  if (ids.length === 0) return;
+
+  const { error } = await supabase.from("users").update({ is_active: nextActive }).in("id", ids);
+  if (error) throw new Error(error.message);
+
+  await logAudit(supabase, staffId, nextActive ? "user.bulk_reactivate" : "user.bulk_deactivate", "user", null, { user_ids: ids, count: ids.length });
   revalidatePath("/admin/members");
 }
 
 export async function promoteToManager(userId: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase, adminId } = await requireAdmin();
   const { data: target, error: fetchErr } = await supabase.from("users").select("role").eq("id", userId).single();
   if (fetchErr) throw new Error(fetchErr.message);
   if (target?.role === "admin") throw new Error("Can't change an admin's role from here.");
@@ -121,12 +150,13 @@ export async function promoteToManager(userId: string) {
     type: "info",
   });
 
+  await logAudit(supabase, adminId, "user.promote_manager", "user", userId);
   revalidatePath("/admin/team");
   revalidatePath("/admin/members");
 }
 
 export async function demoteManager(userId: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase, adminId } = await requireAdmin();
   const { data: target, error: fetchErr } = await supabase.from("users").select("role").eq("id", userId).single();
   if (fetchErr) throw new Error(fetchErr.message);
   if (target?.role !== "manager") throw new Error("This user isn't a manager.");
@@ -134,15 +164,17 @@ export async function demoteManager(userId: string) {
   const { error } = await supabase.from("users").update({ role: "user" }).eq("id", userId);
   if (error) throw new Error(error.message);
 
+  await logAudit(supabase, adminId, "user.demote_manager", "user", userId);
   revalidatePath("/admin/team");
   revalidatePath("/admin/members");
 }
 
 export async function updateProductRequestStatus(requestId: string, status: "new" | "contacted" | "fulfilled" | "declined", notes: string) {
-  const { supabase } = await requireStaff();
+  const { supabase, staffId } = await requireStaff();
   const { error } = await supabase.from("product_requests")
     .update({ status, admin_notes: notes || null })
     .eq("id", requestId);
   if (error) throw new Error(error.message);
+  await logAudit(supabase, staffId, "request.status_update", "product_request", requestId, { status, notes: notes || null });
   revalidatePath("/admin/requests");
 }

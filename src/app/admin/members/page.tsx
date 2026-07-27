@@ -4,9 +4,12 @@ import { Search, ShieldCheck, Ban, CheckCircle2, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { SelectAllCheckbox } from "@/components/ui/SelectAllCheckbox";
 import { formatMoney, timeAgo } from "@/lib/utils";
-import { toggleUserActive, promoteToManager, demoteManager } from "../actions";
+import { toggleUserActive, promoteToManager, demoteManager, bulkSetUserActive } from "../actions";
 import type { AccountRole } from "@/types/database";
+
+const BULK_FORM_ID = "bulk-member-actions";
 
 export const metadata = { title: "Members | Admin" };
 
@@ -33,7 +36,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
     { href: "/admin/sellers", label: "Seller Verification" },
     { href: "/admin/disputes", label: "Disputes" },
     { href: "/admin/requests", label: "Requests" },
-    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }] : []),
+    ...(isAdmin ? [{ href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }, { href: "/admin/audit", label: "Audit Log" }] : []),
   ];
 
   let query = supabase.from("v_admin_member_directory").select("*").order("created_at", { ascending: false });
@@ -65,12 +68,28 @@ export default async function AdminMembersPage({ searchParams }: Props) {
             </div>
           </form>
 
+          <form id={BULK_FORM_ID} className="mb-3 flex items-center gap-3 flex-wrap">
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <SelectAllCheckbox formId={BULK_FORM_ID} targetName="ids" /> Select all
+            </label>
+            <button type="submit" formAction={bulkSetUserActive.bind(null, false)} className="btn-secondary py-1.5 px-3 text-xs">
+              <Ban className="h-3.5 w-3.5" /> Deactivate selected
+            </button>
+            <button type="submit" formAction={bulkSetUserActive.bind(null, true)} className="btn-secondary py-1.5 px-3 text-xs">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Reactivate selected
+            </button>
+          </form>
+
           <div className="card p-6">
             <h2 className="section-title text-lg mb-4">All members ({members?.length ?? 0})</h2>
             {members && members.length > 0 ? (
               <div className="space-y-3">
                 {members.map((m) => (
-                  <details key={m.id} className="rounded-xl border border-gray-100 p-4">
+                  <div key={m.id} className="flex items-start gap-2.5">
+                    <input type="checkbox" name="ids" value={m.id} form={BULK_FORM_ID}
+                      aria-label={`Select ${m.full_name ?? m.email}`}
+                      className="h-4 w-4 rounded border-gray-300 mt-4 shrink-0" />
+                  <details className="flex-1 min-w-0 rounded-xl border border-gray-100 p-4">
                     <summary className="cursor-pointer flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5 flex-wrap">
@@ -124,6 +143,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                       </div>
                     </div>
                   </details>
+                  </div>
                 ))}
               </div>
             ) : (
