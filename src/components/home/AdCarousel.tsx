@@ -40,29 +40,42 @@ export function AdCarousel({ slides }: Props) {
   return (
     <section className="relative overflow-hidden">
       <div className="relative h-64 sm:h-72">
-        {slides.map((slide, i) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 ${slide.image_url ? "bg-gray-900" : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-          >
-            {slide.image_url ? (
-              <img src={slide.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
-            ) : (
-              <Megaphone className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
-            )}
-            <div className="relative mx-auto max-w-6xl h-full px-12 sm:px-16 flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-center md:text-left text-white">
-              <div className="flex flex-col items-center md:items-start max-w-xl">
-                <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>
-                <p className="text-sm sm:text-base text-white/85 mb-5">{slide.description}</p>
-                <Link href={slide.link_url} className={slide.is_gold
-                  ? "btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5"
-                  : "btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5"}>
-                  {slide.cta_label} <ArrowRight className="h-4 w-4" />
-                </Link>
+        {slides.map((slide, i) => {
+          const hasText = Boolean(slide.title || slide.description);
+          return (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 ${slide.image_url ? "bg-gray-950" : `bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`} transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            >
+              {slide.image_url ? (
+                <>
+                  {/* Full poster shown uncropped — letterboxed, not cover-cropped, since
+                      an uploaded ad creative often carries its own baked-in text/layout. */}
+                  <img src={slide.image_url} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                  {/* Bottom scrim keeps the CTA legible over any image content behind it. */}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+                </>
+              ) : (
+                <Megaphone className="absolute -right-8 -bottom-8 h-56 w-56 sm:h-64 sm:w-64 text-white/10 -rotate-12" strokeWidth={1} />
+              )}
+              <div className={`relative mx-auto max-w-6xl h-full px-12 sm:px-16 flex text-white ${
+                slide.image_url
+                  ? "items-end justify-center pb-4"
+                  : "flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-center md:text-left"
+              }`}>
+                <div className={`flex flex-col items-center ${slide.image_url ? "" : "md:items-start max-w-xl"}`}>
+                  {hasText && <h2 className="text-2xl sm:text-3xl font-extrabold mb-2">{slide.title}</h2>}
+                  {hasText && <p className="text-sm sm:text-base text-white/85 mb-5">{slide.description}</p>}
+                  <Link href={slide.link_url} className={slide.is_gold
+                    ? "btn-primary bg-gold-400 text-brand-900 hover:bg-gold-300 font-bold py-2.5 px-5"
+                    : "btn-primary bg-white text-brand-700 hover:bg-blue-50 py-2.5 px-5"}>
+                    {slide.cta_label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {slides.length > 1 && (

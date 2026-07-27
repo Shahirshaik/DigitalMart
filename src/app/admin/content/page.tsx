@@ -139,19 +139,19 @@ export default async function AdminContentPage() {
               {(slides ?? []).map((s) => (
                 <details key={s.id} className="rounded-xl border border-gray-100 p-4" open={!s.is_active}>
                   <summary className="cursor-pointer text-sm font-medium text-gray-800 flex items-center justify-between">
-                    <span>{s.title} {!s.is_active && <span className="badge bg-gray-100 text-gray-500 ml-2">inactive</span>}</span>
+                    <span>{s.title || "(image-only slide)"} {!s.is_active && <span className="badge bg-gray-100 text-gray-500 ml-2">inactive</span>}</span>
                     <span className="text-xs text-gray-400">#{s.sort_order}</span>
                   </summary>
                   <form action={upsertAdSlide} className="mt-4 space-y-3">
                     <input type="hidden" name="id" value={s.id} />
                     <ImageUploader name="image_url" defaultValue={s.image_url} label="Slide image (optional — falls back to gradient + icon)" />
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Title</label>
-                      <input name="title" defaultValue={s.title} required className="input" />
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Title (leave blank if your image already has its own headline)</label>
+                      <input name="title" defaultValue={s.title} className="input" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-                      <textarea name="description" defaultValue={s.description} rows={2} required className="input" />
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Description (leave blank if your image already has its own copy)</label>
+                      <textarea name="description" defaultValue={s.description} rows={2} className="input" />
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
@@ -197,12 +197,12 @@ export default async function AdminContentPage() {
               <form action={upsertAdSlide} className="mt-4 space-y-3">
                 <ImageUploader name="image_url" label="Slide image (optional)" />
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Title</label>
-                  <input name="title" required className="input" />
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Title (leave blank if your image already has its own headline)</label>
+                  <input name="title" className="input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-                  <textarea name="description" rows={2} required className="input" />
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Description (leave blank if your image already has its own copy)</label>
+                  <textarea name="description" rows={2} className="input" />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
