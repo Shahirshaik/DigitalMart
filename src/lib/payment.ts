@@ -1,13 +1,27 @@
-export const UPI_ID = process.env.NEXT_PUBLIC_UPI_ID ?? "";
-export const UPI_PAYEE_NAME = process.env.NEXT_PUBLIC_UPI_PAYEE_NAME ?? "";
-
-export function buildUpiLink(amount: number, note: string) {
-  const params = new URLSearchParams({
-    pa: UPI_ID,
-    pn: UPI_PAYEE_NAME,
+function upiParams(upiId: string, payeeName: string, amount: number, note: string) {
+  return new URLSearchParams({
+    pa: upiId,
+    pn: payeeName,
     am: amount.toFixed(2),
     cu: "INR",
     tn: note,
-  });
-  return `upi://pay?${params.toString()}`;
+  }).toString();
+}
+
+// Generic UPI link — opens the phone's app chooser if multiple UPI apps are installed.
+export function buildUpiLink(upiId: string, payeeName: string, amount: number, note: string) {
+  return `upi://pay?${upiParams(upiId, payeeName, amount, note)}`;
+}
+
+// App-specific schemes jump straight into that app instead of showing a chooser.
+export function buildPhonePeLink(upiId: string, payeeName: string, amount: number, note: string) {
+  return `phonepe://pay?${upiParams(upiId, payeeName, amount, note)}`;
+}
+
+export function buildPaytmLink(upiId: string, payeeName: string, amount: number, note: string) {
+  return `paytmmp://pay?${upiParams(upiId, payeeName, amount, note)}`;
+}
+
+export function buildGPayLink(upiId: string, payeeName: string, amount: number, note: string) {
+  return `tez://upi/pay?${upiParams(upiId, payeeName, amount, note)}`;
 }

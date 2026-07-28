@@ -72,7 +72,7 @@ export default async function AdminContentPage() {
           </div>
 
           <nav className="flex flex-wrap gap-3 text-xs text-brand-600 mb-8">
-            <a href="#hero" className="hover:underline">Hero &amp; Contact</a>
+            <a href="#hero" className="hover:underline">Hero, Contact &amp; Payment</a>
             <a href="#carousel" className="hover:underline">Ad Carousel</a>
             <a href="#perks" className="hover:underline">Seller Perks</a>
             <a href="#categories" className="hover:underline">Category Icons</a>
@@ -132,6 +132,44 @@ export default async function AdminContentPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Support email</label>
                   <input name="support_email" defaultValue={content.support_email} className="input" />
+                </div>
+              </div>
+              <hr className="border-gray-100" />
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-1">Payment Collection</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  The UPI ID buyers pay into at checkout — the QR code and "Pay with PhonePe/Google Pay/Paytm"
+                  buttons regenerate from this automatically, no redeploy needed.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Collection UPI ID</label>
+                  <input name="collection_upi_id" defaultValue={content.collection_upi_id} className="input font-mono" placeholder="yourname@upi" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Payee name shown to buyers</label>
+                  <input name="collection_upi_payee_name" defaultValue={content.collection_upi_payee_name} className="input" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-1">Bank Reference (optional)</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  For your own records only — never shown to buyers or used in any payment.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Account holder name</label>
+                  <input name="bank_account_holder_name" defaultValue={content.bank_account_holder_name} className="input" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Bank name</label>
+                  <input name="bank_name" defaultValue={content.bank_name} className="input" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Account number</label>
+                  <input name="bank_account_number" defaultValue={content.bank_account_number} className="input font-mono" />
                 </div>
               </div>
               <button type="submit" className="btn-primary py-2.5 px-5 text-sm">Save</button>

@@ -7,8 +7,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingInput } from "@/components/ui/RatingInput";
 import { formatPrice, buildWhatsAppLink } from "@/lib/utils";
-import { buildUpiLink, UPI_ID, UPI_PAYEE_NAME } from "@/lib/payment";
-import { getSupportContact } from "@/lib/siteContent";
+import { buildUpiLink, buildPhonePeLink, buildPaytmLink, buildGPayLink } from "@/lib/payment";
+import { getSupportContact, getPaymentCollectionInfo } from "@/lib/siteContent";
 import { markOrderPaid, raiseDispute, submitReview } from "../actions";
 import type { AccountRole } from "@/types/database";
 
@@ -38,8 +38,13 @@ export default async function CheckoutPage({ params }: Props) {
   if (order.buyer_id !== user.id && order.seller_id !== user.id && !isAdmin) notFound();
 
   const itemTitle = order.item_type === "listing" ? order.listing?.title : order.course?.title;
-  const upiLink = buildUpiLink(order.amount, `DigitalMart ${id.slice(0, 8)}`);
+  const { upiId, payeeName } = await getPaymentCollectionInfo();
+  const paymentNote = `DigitalMart ${id.slice(0, 8)}`;
+  const upiLink = buildUpiLink(upiId, payeeName, order.amount, paymentNote);
   const qrDataUrl = await QRCode.toDataURL(upiLink, { width: 260, margin: 1 });
+  const phonePeLink = buildPhonePeLink(upiId, payeeName, order.amount, paymentNote);
+  const paytmLink = buildPaytmLink(upiId, payeeName, order.amount, paymentNote);
+  const gPayLink = buildGPayLink(upiId, payeeName, order.amount, paymentNote);
 
   const isBuyer = order.buyer_id === user.id;
   const targetId = order.item_type === "listing" ? order.listing?.id : order.course?.id;
@@ -114,10 +119,26 @@ export default async function CheckoutPage({ params }: Props) {
                 </p>
               </div>
 
+              <p className="text-sm font-medium text-gray-700 mb-3">On your phone? Pay directly with:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+                <a href={phonePeLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white" style={{ backgroundColor: "#5f259f" }}>
+                  PhonePe
+                </a>
+                <a href={gPayLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white bg-gray-800">
+                  Google Pay
+                </a>
+                <a href={paytmLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white" style={{ backgroundColor: "#00baf2" }}>
+                  Paytm
+                </a>
+                <a href={upiLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white bg-brand-600">
+                  Other UPI App
+                </a>
+              </div>
+
               <img src={qrDataUrl} alt="UPI QR code" className="mx-auto rounded-xl border border-gray-100" />
-              <p className="text-sm text-gray-500 mt-4">Scan with any UPI app, or pay to:</p>
-              <p className="font-mono text-lg font-semibold text-gray-900 mt-1">{UPI_ID}</p>
-              <p className="text-sm text-gray-500">{UPI_PAYEE_NAME}</p>
+              <p className="text-sm text-gray-500 mt-4">Or scan the QR code, or pay to:</p>
+              <p className="font-mono text-lg font-semibold text-gray-900 mt-1">{upiId}</p>
+              <p className="text-sm text-gray-500">{payeeName}</p>
 
               <form action={markOrderPaid.bind(null, id)} className="mt-6">
                 <button type="submit" className="btn-primary w-full py-3">

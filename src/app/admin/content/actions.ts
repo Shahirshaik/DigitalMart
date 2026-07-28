@@ -22,6 +22,7 @@ function revalidateContentPaths() {
   revalidatePath("/contact");
   revalidatePath("/listings");
   revalidatePath("/courses");
+  revalidatePath("/checkout/[id]", "page");
 }
 
 export async function updateSiteContent(formData: FormData) {
@@ -31,6 +32,8 @@ export async function updateSiteContent(formData: FormData) {
     "hero_cta_primary_label", "hero_cta_secondary_label",
     "perks_section_title", "perks_section_subtitle",
     "support_whatsapp_number", "support_email",
+    "collection_upi_id", "collection_upi_payee_name",
+    "bank_account_holder_name", "bank_name", "bank_account_number",
   ];
   const rows = keys.map((key) => ({ key, value: String(formData.get(key) ?? "") }));
   const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
