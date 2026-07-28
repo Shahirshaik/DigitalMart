@@ -11,6 +11,11 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Password recovery goes straight to the reset-password page — skip the
+      // normal role/onboarding redirect, since this is a security action, not
+      // a regular sign-in.
+      if (next.startsWith("/auth/reset-password")) return NextResponse.redirect(`${origin}${next}`);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         if (ref && ref !== user.id) {

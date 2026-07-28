@@ -54,8 +54,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login?next=/onboarding", request.url));
   }
 
-  // Redirect logged-in users away from auth pages
-  if (path.startsWith("/auth/") && user) {
+  // Redirect logged-in users away from auth pages — except reset-password,
+  // which a logged-in user lands on right after clicking a recovery link and
+  // must be allowed to complete.
+  if (path.startsWith("/auth/") && user && !path.startsWith("/auth/reset-password")) {
     const { data: profile } = await supabase
       .from("users").select("role, onboarding_completed_at").eq("id", user.id).single();
     if (profile?.role === "admin") return NextResponse.redirect(new URL("/admin", request.url));
