@@ -124,7 +124,7 @@ export default async function CheckoutPage({ params }: Props) {
                 <a href={phonePeLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white" style={{ backgroundColor: "#5f259f" }}>
                   PhonePe
                 </a>
-                <a href={gPayLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white bg-gray-800">
+                <a href={gPayLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white" style={{ backgroundColor: "#1f2937" }}>
                   Google Pay
                 </a>
                 <a href={paytmLink} className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-sm font-semibold text-white" style={{ backgroundColor: "#00baf2" }}>
