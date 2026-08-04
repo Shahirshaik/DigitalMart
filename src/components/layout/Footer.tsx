@@ -17,6 +17,7 @@ export async function Footer() {
         <div className="flex items-center gap-5 text-sm text-gray-500">
           <Link href="/about" className="hover:text-brand-600">About</Link>
           <Link href="/contact" className="hover:text-brand-600">Contact</Link>
+          <Link href="/partners" className="hover:text-brand-600">Partner With Us</Link>
           <Link href="/terms" className="hover:text-brand-600">Terms</Link>
           <Link href="/privacy" className="hover:text-brand-600">Privacy</Link>
           {supportWhatsAppLink && (

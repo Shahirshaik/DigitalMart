@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { formatPrice, DELIVERY_LABELS, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { getBrandVisual } from "@/lib/brandIcons";
 import { createListingOrder } from "@/app/checkout/actions";
+import { addListingToCart } from "@/app/cart/actions";
 import type { AccountRole } from "@/types/database";
 
 interface Props { params: Promise<{ id: string }> }
@@ -145,11 +146,18 @@ export default async function ListingDetailPage({ params }: Props) {
                 {user?.id === listing.seller_id ? (
                   <p className="text-center text-sm text-gray-400 py-3 mb-2">This is your own listing.</p>
                 ) : (
-                  <form action={createListingOrder.bind(null, listing.id)}>
-                    <button type="submit" className="btn-primary w-full py-3 mb-2">
-                      Buy Now — Pay via UPI
-                    </button>
-                  </form>
+                  <>
+                    <form action={createListingOrder.bind(null, listing.id)}>
+                      <button type="submit" className="btn-primary w-full py-3 mb-2">
+                        Buy Now — Pay via UPI
+                      </button>
+                    </form>
+                    <form action={addListingToCart.bind(null, listing.id)}>
+                      <button type="submit" className="btn-secondary w-full py-2.5 mb-2">
+                        Add to Cart
+                      </button>
+                    </form>
+                  </>
                 )}
                 {whatsappLink ? (
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary w-full py-2.5">

@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   "user.demote_manager": "Removed manager access",
   "request.status_update": "Updated product request status",
   "payout.mark_sent": "Marked withdrawal sent",
+  "referral.status_update": "Updated partner referral status",
 };
 
 interface AuditRow {
@@ -57,6 +58,7 @@ export default async function AdminAuditPage() {
     { href: "/admin/sellers", label: "Seller Verification" },
     { href: "/admin/disputes", label: "Disputes" },
     { href: "/admin/requests", label: "Requests" },
+    { href: "/admin/referrals", label: "Partner Referrals" },
     { href: "/admin/payouts", label: "Payouts" },
     { href: "/admin/content", label: "Site Content" },
     { href: "/admin/team", label: "Team" },

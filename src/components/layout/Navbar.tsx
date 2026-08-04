@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet } from "lucide-react";
+import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet, ShoppingCart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/utils";
 import { LogoMark } from "@/components/ui/Logo";
@@ -44,6 +44,7 @@ export function Navbar({ userRole, userEmail }: Props) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+  const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
   const supabase = createClient();
 
@@ -60,6 +61,12 @@ export function Navbar({ userRole, userEmail }: Props) {
         .order("created_at", { ascending: false })
         .limit(15);
       if (!cancelled && data) setNotifications(data);
+
+      const { count } = await supabase
+        .from("cart_items")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (!cancelled) setCartCount(count ?? 0);
     })();
     return () => { cancelled = true; };
   }, [userEmail]);
@@ -108,6 +115,17 @@ export function Navbar({ userRole, userEmail }: Props) {
           </nav>
 
           <div className="flex items-center gap-2">
+            {userEmail && (
+              <Link href="/cart" aria-label="Cart"
+                className="relative flex items-center justify-center rounded-xl bg-gray-100 p-2.5 text-gray-600 hover:bg-gray-200 transition-colors">
+                <ShoppingCart className="h-4 w-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
             {userEmail && (
               <div className="relative">
                 <button onClick={() => setNotifOpen(!notifOpen)}

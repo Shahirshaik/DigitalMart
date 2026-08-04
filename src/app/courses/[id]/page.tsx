@@ -9,6 +9,7 @@ import { RatingStars } from "@/components/ui/RatingStars";
 import { WhatsAppLeadButton } from "@/components/ui/WhatsAppLeadButton";
 import { formatPrice, timeAgo, buildWhatsAppLink } from "@/lib/utils";
 import { createCourseOrder } from "@/app/checkout/actions";
+import { addCourseToCart } from "@/app/cart/actions";
 import type { AccountRole } from "@/types/database";
 
 interface Props { params: Promise<{ id: string }> }
@@ -159,9 +160,14 @@ export default async function CourseDetailPage({ params }: Props) {
                     )}
                   </div>
                 ) : (
-                  <form action={createCourseOrder.bind(null, course.id)}>
-                    <button type="submit" className="btn-primary w-full py-3 mb-2">Enroll — Pay via UPI</button>
-                  </form>
+                  <>
+                    <form action={createCourseOrder.bind(null, course.id)}>
+                      <button type="submit" className="btn-primary w-full py-3 mb-2">Enroll — Pay via UPI</button>
+                    </form>
+                    <form action={addCourseToCart.bind(null, course.id)}>
+                      <button type="submit" className="btn-secondary w-full py-2.5 mb-2">Add to Cart</button>
+                    </form>
+                  </>
                 )}
                 {whatsappLink && (
                   <WhatsAppLeadButton href={whatsappLink} sellerId={course.seller_id} courseId={course.id} />

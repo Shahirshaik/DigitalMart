@@ -17,6 +17,7 @@ const ADMIN_TABS = [
   { href: "/admin/sellers", label: "Seller Verification" },
   { href: "/admin/disputes", label: "Disputes" },
   { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/referrals", label: "Partner Referrals" },
   { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/content", label: "Site Content" },
   { href: "/admin/team", label: "Team" },

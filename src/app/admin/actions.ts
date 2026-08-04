@@ -178,3 +178,13 @@ export async function updateProductRequestStatus(requestId: string, status: "new
   await logAudit(supabase, staffId, "request.status_update", "product_request", requestId, { status, notes: notes || null });
   revalidatePath("/admin/requests");
 }
+
+export async function updateInstituteReferralStatus(referralId: string, status: "new" | "contacted" | "enrolled" | "commission_paid") {
+  const { supabase, adminId } = await requireAdmin();
+  const { error } = await supabase.from("institute_referrals")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", referralId);
+  if (error) throw new Error(error.message);
+  await logAudit(supabase, adminId, "referral.status_update", "institute_referral", referralId, { status });
+  revalidatePath("/admin/referrals");
+}

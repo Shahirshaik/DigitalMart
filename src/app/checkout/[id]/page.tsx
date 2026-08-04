@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RatingInput } from "@/components/ui/RatingInput";
+import { ReceiptUploader } from "@/components/ui/ReceiptUploader";
 import { formatPrice, buildWhatsAppLink } from "@/lib/utils";
 import { buildUpiLink, buildPhonePeLink, buildPaytmLink, buildGPayLink } from "@/lib/payment";
 import { getSupportContact, getPaymentCollectionInfo } from "@/lib/siteContent";
@@ -57,6 +58,21 @@ export default async function CheckoutPage({ params }: Props) {
     : null;
 
   const { whatsappNumber: supportWhatsAppNumber } = await getSupportContact();
+
+  let screenshotSignedUrl: string | null = null;
+  if (order.payment_screenshot_url) {
+    const { data: signed } = await supabase.storage
+      .from("payment-proofs")
+      .createSignedUrl(order.payment_screenshot_url, 3600);
+    screenshotSignedUrl = signed?.signedUrl ?? null;
+  }
+
+  let deliveryContent: string | null = null;
+  if (isBuyer && order.item_type === "listing" && (order.status === "confirmed" || order.status === "released")) {
+    const { data: delivery } = await supabase.from("listing_delivery_content")
+      .select("content").eq("listing_id", order.listing_id).maybeSingle();
+    deliveryContent = delivery?.content ?? null;
+  }
 
   const [{ data: existingReview }, { data: dispute }] = await Promise.all([
     isBuyer && targetId
@@ -113,9 +129,9 @@ export default async function CheckoutPage({ params }: Props) {
                 <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800">
                   This is a <strong>manual UPI payment</strong> — pay Digital Mart's collection UPI ID
-                  below, then click "I've Paid". We hold your payment reference until the seller
-                  confirms and delivers, then forward the seller their share separately — there's no
-                  automated payment verification yet.
+                  below, then enter your transaction reference (UTR) and click "I've Paid". We hold
+                  your payment until the seller confirms and delivers, then forward the seller their
+                  share separately.
                 </p>
               </div>
 
@@ -140,7 +156,12 @@ export default async function CheckoutPage({ params }: Props) {
               <p className="font-mono text-lg font-semibold text-gray-900 mt-1">{upiId}</p>
               <p className="text-sm text-gray-500">{payeeName}</p>
 
-              <form action={markOrderPaid.bind(null, id)} className="mt-6">
+              <form action={markOrderPaid.bind(null, id)} className="mt-6 space-y-3 text-left">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">UPI Transaction Reference (UTR) *</label>
+                  <input name="utr_reference" required placeholder="12-digit reference from your UPI app" className="input font-mono" />
+                </div>
+                <ReceiptUploader name="payment_screenshot_url" referenceId={id} />
                 <button type="submit" className="btn-primary w-full py-3">
                   <CheckCircle2 className="h-4 w-4" /> I've Paid
                 </button>
@@ -166,6 +187,21 @@ export default async function CheckoutPage({ params }: Props) {
                 <p className="text-xs text-gray-400 mt-3">
                   Auto-confirms on {new Date(order.confirm_deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} if no dispute is raised.
                 </p>
+              )}
+              {(order.utr_reference || screenshotSignedUrl) && (
+                <div className="mt-5 rounded-xl border border-gray-100 p-4 text-left">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment proof submitted</p>
+                  {order.utr_reference && (
+                    <p className="text-sm text-gray-700 mb-2">
+                      UTR: <span className="font-mono font-semibold">{order.utr_reference}</span>
+                    </p>
+                  )}
+                  {screenshotSignedUrl && (
+                    <a href={screenshotSignedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-600 hover:underline">
+                      View payment screenshot →
+                    </a>
+                  )}
+                </div>
               )}
               {isBuyer && (() => {
                 const nudgeLink = buildWhatsAppLink(
@@ -221,9 +257,32 @@ export default async function CheckoutPage({ params }: Props) {
               <h2 className="font-semibold text-gray-900 mb-1">Payment confirmed</h2>
               <p className="text-sm text-gray-500">
                 {isBuyer
-                  ? "The seller has confirmed your payment. They'll deliver the item to you directly (email or the contact details you shared)."
+                  ? deliveryContent
+                    ? "The seller has confirmed your payment — your delivery is ready below."
+                    : "The seller has confirmed your payment. They'll deliver the item to you directly (email or the contact details you shared)."
                   : "You've confirmed and released this order."}
               </p>
+              {deliveryContent && (
+                <div className="mt-4 rounded-xl bg-green-50 border border-green-200 p-4 text-left">
+                  <p className="text-xs font-semibold text-green-800 uppercase tracking-wide mb-2">Your delivery</p>
+                  <p className="text-sm text-gray-800 font-mono whitespace-pre-line break-words">{deliveryContent}</p>
+                </div>
+              )}
+              {(order.utr_reference || screenshotSignedUrl) && (
+                <div className="mt-4 rounded-xl border border-gray-100 p-4 text-left">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment proof</p>
+                  {order.utr_reference && (
+                    <p className="text-sm text-gray-700 mb-2">
+                      UTR: <span className="font-mono font-semibold">{order.utr_reference}</span>
+                    </p>
+                  )}
+                  {screenshotSignedUrl && (
+                    <a href={screenshotSignedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-600 hover:underline">
+                      View payment screenshot →
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

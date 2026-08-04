@@ -39,6 +39,7 @@ export async function createListing(formData: FormData) {
   const stockRaw = String(formData.get("stock_count") ?? "");
   const stock_count = stockRaw ? Number(stockRaw) : null;
   const image_url = String(formData.get("image_url") ?? "").trim();
+  const delivery_content = String(formData.get("delivery_content") ?? "").trim();
 
   if (!title || !category_id || price < 0) throw new Error("Missing required fields");
 
@@ -55,6 +56,11 @@ export async function createListing(formData: FormData) {
   }).select("id").single();
 
   if (error || !data) throw new Error(error?.message ?? "Could not create listing");
+
+  if (delivery_content) {
+    await supabase.from("listing_delivery_content").upsert({ listing_id: data.id, content: delivery_content, updated_at: new Date().toISOString() });
+  }
+
   revalidatePath("/dashboard/listings");
   redirect("/dashboard/listings");
 }
@@ -70,6 +76,7 @@ export async function updateListing(listingId: string, formData: FormData) {
   const stockRaw = String(formData.get("stock_count") ?? "");
   const stock_count = stockRaw ? Number(stockRaw) : null;
   const image_url = String(formData.get("image_url") ?? "").trim();
+  const delivery_content = String(formData.get("delivery_content") ?? "").trim();
 
   if (!title || !category_id || price < 0) throw new Error("Missing required fields");
 
@@ -83,6 +90,13 @@ export async function updateListing(listingId: string, formData: FormData) {
   const { error } = await query;
 
   if (error) throw new Error(error.message);
+
+  if (delivery_content) {
+    await supabase.from("listing_delivery_content").upsert({ listing_id: listingId, content: delivery_content, updated_at: new Date().toISOString() });
+  } else {
+    await supabase.from("listing_delivery_content").delete().eq("listing_id", listingId);
+  }
+
   revalidatePath("/dashboard/listings");
   redirect("/dashboard/listings");
 }

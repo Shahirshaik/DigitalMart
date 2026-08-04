@@ -29,6 +29,9 @@ export default async function EditListingPage({ params }: Props) {
 
   if (!listing) notFound();
 
+  const { data: deliveryContent } = await supabase.from("listing_delivery_content")
+    .select("content").eq("listing_id", id).maybeSingle();
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar userRole={profile?.role as AccountRole} userEmail={user.email ?? null} />
@@ -74,6 +77,15 @@ export default async function EditListingPage({ params }: Props) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Stock (optional)</label>
                 <input name="stock_count" type="number" min={0} step="1" defaultValue={listing.stock_count ?? ""} placeholder="Unlimited" className="input" />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Delivery content (optional)</label>
+              <textarea name="delivery_content" rows={3} defaultValue={deliveryContent?.content ?? ""}
+                placeholder="License key, download link, or account details" className="input font-mono text-sm" />
+              <p className="text-xs text-gray-400 mt-1">
+                Shown to the buyer automatically the moment you confirm their payment — no need to send it
+                separately. Leave blank if you'd rather deliver manually via WhatsApp/email.
+              </p>
             </div>
             <button type="submit" className="btn-primary w-full py-3">Save Changes</button>
           </form>

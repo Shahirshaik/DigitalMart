@@ -52,10 +52,14 @@ export async function createCourseOrder(courseId: string) {
   redirect(`/checkout/${order.id}`);
 }
 
-export async function markOrderPaid(orderId: string) {
+export async function markOrderPaid(orderId: string, formData: FormData) {
   const supabase = await createClient();
+  const utrReference = String(formData.get("utr_reference") ?? "").trim();
+  const paymentScreenshotUrl = (formData.get("payment_screenshot_url") as string) || null;
+  if (!utrReference) throw new Error("Please enter your UPI transaction reference (UTR) before continuing.");
+
   const { error } = await supabase.from("orders")
-    .update({ status: "held" })
+    .update({ status: "held", utr_reference: utrReference, payment_screenshot_url: paymentScreenshotUrl })
     .eq("id", orderId)
     .eq("status", "pending_payment");
   if (error) throw new Error(error.message);
