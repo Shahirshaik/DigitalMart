@@ -24,26 +24,33 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
+  const isAuthPath = path.startsWith("/auth/");
+  const isResetPasswordPath = path.startsWith("/auth/reset-password");
+  const isAdminPath = path.startsWith("/admin");
+
+  // Every check below reads the same row — fetch it once instead of once per check,
+  // since this middleware runs on every navigation for every logged-in user.
+  let profile: { role: string | null; is_active: boolean | null; onboarding_completed_at: string | null } | null = null;
+  if (user && ((!isAuthPath && path !== "/") || isAdminPath || (isAuthPath && !isResetPasswordPath))) {
+    const { data } = await supabase
+      .from("users").select("role, is_active, onboarding_completed_at").eq("id", user.id).single();
+    profile = data;
+  }
+
   // Deactivated accounts are signed out and blocked everywhere except the
   // sign-in flow itself, so a suspicious/banned user can't keep using the app.
-  if (user && !path.startsWith("/auth/") && path !== "/") {
-    const { data: activeCheck } = await supabase
-      .from("users").select("is_active").eq("id", user.id).single();
-    if (activeCheck && activeCheck.is_active === false) {
-      await supabase.auth.signOut();
-      const resp = NextResponse.redirect(new URL("/auth/login?deactivated=1", request.url));
-      supabaseResponse.cookies.getAll().forEach((c) => resp.cookies.set(c.name, c.value));
-      return resp;
-    }
+  if (user && !isAuthPath && path !== "/" && profile?.is_active === false) {
+    await supabase.auth.signOut();
+    const resp = NextResponse.redirect(new URL("/auth/login?deactivated=1", request.url));
+    supabaseResponse.cookies.getAll().forEach((c) => resp.cookies.set(c.name, c.value));
+    return resp;
   }
 
   // Protect /admin — admin and manager
-  if (path.startsWith("/admin")) {
+  if (isAdminPath) {
     if (!user) {
       return NextResponse.redirect(new URL("/auth/login?next=/admin", request.url));
     }
-    const { data: profile } = await supabase
-      .from("users").select("role").eq("id", user.id).single();
     if (profile?.role !== "admin" && profile?.role !== "manager") {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -57,9 +64,7 @@ export async function middleware(request: NextRequest) {
   // Redirect logged-in users away from auth pages — except reset-password,
   // which a logged-in user lands on right after clicking a recovery link and
   // must be allowed to complete.
-  if (path.startsWith("/auth/") && user && !path.startsWith("/auth/reset-password")) {
-    const { data: profile } = await supabase
-      .from("users").select("role, onboarding_completed_at").eq("id", user.id).single();
+  if (isAuthPath && user && !isResetPasswordPath) {
     if (profile?.role === "admin") return NextResponse.redirect(new URL("/admin", request.url));
     if (!profile?.onboarding_completed_at) return NextResponse.redirect(new URL("/onboarding", request.url));
     return NextResponse.redirect(new URL("/", request.url));

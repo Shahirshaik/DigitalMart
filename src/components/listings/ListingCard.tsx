@@ -30,7 +30,7 @@ export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) 
       className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all min-w-0">
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {listing.images?.[0] ? (
-          <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+          <img src={listing.images[0]} alt={listing.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : brand ? (
           <brand.Icon className="h-14 w-14 text-white/95 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
         ) : (

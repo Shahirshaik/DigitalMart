@@ -36,19 +36,17 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let userRole: AccountRole | null = null;
-  let recommendedCourses: any[] = [];
-  let recommendedFor: string | null = null;
+  let profileData: any = null;
   if (user) {
     const { data } = await supabase.from("users")
       .select("role, full_name, category, target_field, skill_level, onboarding_completed_at").eq("id", user.id).single();
+    profileData = data;
     userRole = data?.role ?? null;
-    if (data?.onboarding_completed_at) {
-      recommendedCourses = await getRecommendedCourses(supabase, data, undefined, 4, user.id);
-      recommendedFor = data.full_name ?? null;
-    }
   }
+  const recommendedFor = profileData?.onboarding_completed_at ? (profileData.full_name ?? null) : null;
 
   const [
+    recommendedCourses,
     { data: categories },
     { data: featuredListings },
     { data: featuredCourses },
@@ -60,10 +58,11 @@ export default async function HomePage() {
     { data: slideRows },
     { data: perkRows },
   ] = await Promise.all([
+    recommendedFor ? getRecommendedCourses(supabase, profileData, undefined, 4, user!.id) : Promise.resolve([]),
     supabase.from("listing_categories").select("*").eq("is_active", true).order("sort_order"),
     supabase.from("listings")
       .select("*, category:listing_categories(*), seller:users!listings_seller_id_fkey(id, full_name)")
-      .eq("status", "active").order("view_count", { ascending: false }),
+      .eq("status", "active").order("view_count", { ascending: false }).limit(8),
     supabase.from("courses")
       .select("*, seller:users!courses_seller_id_fkey(id, full_name)")
       .eq("status", "active").order("view_count", { ascending: false }).limit(4),
@@ -188,8 +187,8 @@ export default async function HomePage() {
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="section-title">All Listings</h2>
-                  <p className="text-gray-500 text-sm mt-1">Every digital good live on the marketplace right now</p>
+                  <h2 className="section-title">Popular Listings</h2>
+                  <p className="text-gray-500 text-sm mt-1">Trending digital goods on the marketplace right now</p>
                 </div>
                 <Link href="/listings" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
                   Search & Filter <ArrowRight className="h-3.5 w-3.5" />
