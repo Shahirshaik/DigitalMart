@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Zap, ShieldAlert } from "lucide-react";
 import { formatPrice, DELIVERY_LABELS } from "@/lib/utils";
 import { getBrandVisual } from "@/lib/brandIcons";
@@ -30,7 +31,7 @@ export function ListingCard({ listing, index = 0, rating, reviewCount }: Props) 
       className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all min-w-0">
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {listing.images?.[0] ? (
-          <img src={listing.images[0]} alt={listing.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          <Image src={listing.images[0]} alt={listing.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px" className="object-cover" />
         ) : brand ? (
           <brand.Icon className="h-14 w-14 text-white/95 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
         ) : (

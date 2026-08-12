@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Zap, ShieldAlert, ShieldCheck, Smartphone, MessageCircle, ArrowLeft } from "lucide-react";
@@ -86,9 +87,9 @@ export default async function ListingDetailPage({ params }: Props) {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <div className="card overflow-hidden">
-                <div className={`h-56 bg-gradient-to-br ${brand?.gradient ?? "from-brand-400 to-trust-500"} flex items-center justify-center`}>
+                <div className={`relative h-56 bg-gradient-to-br ${brand?.gradient ?? "from-brand-400 to-trust-500"} flex items-center justify-center`}>
                   {listing.images?.[0] ? (
-                    <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                    <Image src={listing.images[0]} alt={listing.title} fill priority sizes="(max-width: 768px) 100vw, 760px" className="object-cover" />
                   ) : brand ? (
                     <brand.Icon className="h-24 w-24 text-white/95" strokeWidth={1.5} />
                   ) : (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { GraduationCap, Users } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -27,7 +28,7 @@ export function CourseCard({ course, index = 0, rating, reviewCount, enrollCount
       className="card flex flex-col overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all min-w-0">
       <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center shrink-0`}>
         {course.thumbnail_url ? (
-          <img src={course.thumbnail_url} alt={course.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          <Image src={course.thumbnail_url} alt={course.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px" className="object-cover" />
         ) : (
           <GraduationCap className="h-12 w-12 text-white/90 group-hover:scale-110 transition-transform" />
         )}

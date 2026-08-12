@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Megaphone } from "lucide-react";
 
@@ -57,8 +58,8 @@ export function AdCarousel({ slides }: Props) {
                       tall phone viewport rarely look right from a single source image.
                       Shown uncropped (object-contain), since an uploaded ad creative
                       often carries its own baked-in text/layout. */}
-                  {mobileImg && <img src={mobileImg} alt="" className="absolute inset-0 h-full w-full object-contain sm:hidden" />}
-                  {desktopImg && <img src={desktopImg} alt="" className="absolute inset-0 h-full w-full object-contain hidden sm:block" />}
+                  {mobileImg && <Image src={mobileImg} alt="" fill priority={i === 0} sizes="100vw" className="object-contain sm:hidden" />}
+                  {desktopImg && <Image src={desktopImg} alt="" fill priority={i === 0} sizes="100vw" className="object-contain hidden sm:block" />}
                   {/* Bottom scrim keeps the CTA legible over any image content behind it. */}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
                 </>

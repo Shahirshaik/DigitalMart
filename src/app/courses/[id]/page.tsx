@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ShieldCheck, Smartphone, PlayCircle, Users, Award, ArrowLeft } from "lucide-react";
@@ -85,9 +86,9 @@ export default async function CourseDetailPage({ params }: Props) {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <div className="card overflow-hidden">
-                <div className="h-52 bg-gradient-to-br from-indigo-400 to-brand-600 flex items-center justify-center">
+                <div className="relative h-52 bg-gradient-to-br from-indigo-400 to-brand-600 flex items-center justify-center">
                   {course.thumbnail_url
-                    ? <img src={course.thumbnail_url} alt={course.title} className="h-full w-full object-cover" />
+                    ? <Image src={course.thumbnail_url} alt={course.title} fill priority sizes="(max-width: 768px) 100vw, 760px" className="object-cover" />
                     : <PlayCircle className="h-14 w-14 text-white/90" />}
                 </div>
                 <div className="p-6">

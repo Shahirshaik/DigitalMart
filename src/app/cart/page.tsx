@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ShoppingCart, Trash2, Package, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -77,9 +78,9 @@ export default async function CartPage() {
                     <div className="space-y-3">
                       {sellerItems.map((row) => (
                         <div key={row.cartItemId} className="flex items-center gap-3">
-                          <div className="h-14 w-14 shrink-0 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
+                          <div className="relative h-14 w-14 shrink-0 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
                             {row.image ? (
-                              <img src={row.image} alt={row.title} className="h-full w-full object-cover" />
+                              <Image src={row.image} alt={row.title} fill sizes="56px" className="object-cover" />
                             ) : row.itemType === "listing" ? (
                               <Package className="h-5 w-5 text-gray-300" />
                             ) : (
