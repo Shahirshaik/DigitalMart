@@ -32,6 +32,7 @@ export async function updateSiteContent(formData: FormData) {
     "hero_cta_primary_label", "hero_cta_secondary_label",
     "perks_section_title", "perks_section_subtitle",
     "support_whatsapp_number", "support_email",
+    "social_instagram_url", "social_facebook_url", "social_whatsapp_channel_url",
     "collection_upi_id", "collection_upi_payee_name",
     "bank_account_holder_name", "bank_name", "bank_account_number",
   ];

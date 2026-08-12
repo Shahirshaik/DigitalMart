@@ -137,6 +137,25 @@ export default async function AdminContentPage() {
               </div>
               <hr className="border-gray-100" />
               <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-1">Social Media</h3>
+                <p className="text-xs text-gray-500 mb-3">Shown as footer links. Leave a field blank to hide that link.</p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Instagram URL</label>
+                  <input name="social_instagram_url" defaultValue={content.social_instagram_url} className="input" placeholder="https://instagram.com/..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Facebook URL</label>
+                  <input name="social_facebook_url" defaultValue={content.social_facebook_url} className="input" placeholder="https://facebook.com/..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">WhatsApp Channel URL</label>
+                  <input name="social_whatsapp_channel_url" defaultValue={content.social_whatsapp_channel_url} className="input" placeholder="https://whatsapp.com/channel/..." />
+                </div>
+              </div>
+              <hr className="border-gray-100" />
+              <div>
                 <h3 className="text-sm font-semibold text-gray-800 mb-1">Payment Collection</h3>
                 <p className="text-xs text-gray-500 mb-3">
                   The UPI ID buyers pay into at checkout — the QR code and "Pay with PhonePe/Google Pay/Paytm"

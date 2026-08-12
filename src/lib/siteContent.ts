@@ -22,6 +22,21 @@ export async function getSupportContact() {
 // this at request time, so changing it here takes effect immediately with no
 // redeploy. Bank fields are reference-only for the admin's own record-keeping
 // and are never used in any payment flow or shown to buyers.
+// Social media links shown in the footer (admin-editable via /admin/content).
+// Empty string means "not set" — the footer hides that link entirely rather
+// than pointing to a blank/placeholder URL.
+export async function getSocialLinks() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("site_content").select("key, value")
+    .in("key", ["social_instagram_url", "social_facebook_url", "social_whatsapp_channel_url"]);
+  const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
+  return {
+    instagramUrl: map.social_instagram_url || "",
+    facebookUrl: map.social_facebook_url || "",
+    whatsappChannelUrl: map.social_whatsapp_channel_url || "",
+  };
+}
+
 export async function getPaymentCollectionInfo() {
   const supabase = await createClient();
   const { data } = await supabase.from("site_content").select("key, value")
