@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { queueAutoListingPost } from "@/lib/social/autopost";
 
 async function requireSeller() {
   const supabase = await createClient();
@@ -61,8 +60,6 @@ export async function createListing(formData: FormData) {
   if (delivery_content) {
     await supabase.from("listing_delivery_content").upsert({ listing_id: data.id, content: delivery_content, updated_at: new Date().toISOString() });
   }
-
-  await queueAutoListingPost({ id: data.id, title, price, currency: "INR", imageUrl: image_url || null });
 
   revalidatePath("/dashboard/listings");
   redirect("/dashboard/listings");

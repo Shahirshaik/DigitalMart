@@ -56,24 +56,6 @@ unauthenticated requests through. Vercel automatically sends `CRON_SECRET` as th
 `Authorization: Bearer` header when it invokes the route, so once the env var is set
 there's nothing else to wire up. Never commit either value.
 
-**Required for social media auto-posting (`/admin/social`) to work:**
-
-```
-META_APP_ID=...                 # Meta Developer App → App Settings → Basic → App ID
-META_APP_SECRET=...             # Meta Developer App → App Settings → Basic → App Secret
-NEXT_PUBLIC_SITE_URL=https://digitalmart-sellers.vercel.app   # used to build the OAuth redirect/callback URL
-```
-
-Create the app at [developers.facebook.com](https://developers.facebook.com), add the
-**Facebook Login for Business** and **Instagram** products, and register
-`{NEXT_PUBLIC_SITE_URL}/api/social/callback` as a valid OAuth redirect URI. The
-Instagram account being connected must be a Business/Creator account linked to a
-real Facebook **Page** (not a personal profile) — the Graph API can't post to personal
-profiles at all, and Instagram publishing only works through a linked Page.
-Posting to your own account(s) works immediately once you're added as an Admin/Developer
-on the Meta App; posting on behalf of other businesses would additionally require Meta's
-App Review, which doesn't apply here since this app only ever posts to its own accounts.
-
 ---
 
 ## Step 3 — Install & Run

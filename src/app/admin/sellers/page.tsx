@@ -24,7 +24,7 @@ export default async function AdminSellersPage() {
     { href: "/admin/sellers", label: "Seller Verification" },
     { href: "/admin/disputes", label: "Disputes" },
     { href: "/admin/requests", label: "Requests" },
-    ...(isAdmin ? [{ href: "/admin/referrals", label: "Partner Referrals" }, { href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/social", label: "Social Media" }, { href: "/admin/team", label: "Team" }, { href: "/admin/audit", label: "Audit Log" }] : []),
+    ...(isAdmin ? [{ href: "/admin/referrals", label: "Partner Referrals" }, { href: "/admin/payouts", label: "Payouts" }, { href: "/admin/content", label: "Site Content" }, { href: "/admin/team", label: "Team" }, { href: "/admin/audit", label: "Audit Log" }] : []),
   ];
 
   const [{ data: pending }, { data: verified }] = await Promise.all([

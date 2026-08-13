@@ -29,7 +29,6 @@ export default async function AdminTeamPage({ searchParams }: Props) {
     { href: "/admin/referrals", label: "Partner Referrals" },
     { href: "/admin/payouts", label: "Payouts" },
     { href: "/admin/content", label: "Site Content" },
-    { href: "/admin/social", label: "Social Media" },
     { href: "/admin/team", label: "Team" },
     { href: "/admin/audit", label: "Audit Log" },
   ];
