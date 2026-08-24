@@ -13,7 +13,7 @@ export async function Footer() {
   const hasSocialLinks = Boolean(instagramUrl || facebookUrl || whatsappChannelUrl);
 
   return (
-    <footer className="border-t border-gray-100 bg-white">
+    <footer className="border-t border-gray-100 bg-white pb-20 md:pb-0">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <LogoMark size={24} />

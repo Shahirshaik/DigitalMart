@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { AdCarousel } from "@/components/home/AdCarousel";
-import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap, Wallet, Store } from "lucide-react";
+import { ShieldCheck, LayoutGrid, Compass, ArrowRight, Users, Package, GraduationCap, Wallet, Store, Search } from "lucide-react";
 import { PERK_ICON_MAP } from "@/lib/perkIcons";
 import { getRecommendedCourses } from "@/lib/recommend";
 import type { AccountRole, ListingCategory, ListingFull, CourseFull } from "@/types/database";
@@ -107,7 +107,29 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar userRole={userRole} userEmail={user?.email ?? null} />
+
+      <form action="/listings" method="GET" className="md:hidden bg-white border-b border-gray-100 px-4 py-2.5">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input name="q" placeholder="Search listings and courses..." className="input pl-10 py-2.5 text-sm" />
+        </div>
+      </form>
+
       <AdCarousel slides={slides} />
+
+      <section className="md:hidden bg-white pt-4 pb-1">
+        <div className="px-4 flex gap-4 overflow-x-auto scrollbar-hide">
+          {(categories as ListingCategory[] | null)?.map((c) => (
+            <Link key={c.slug} href={`/listings?category=${c.slug}`}
+              className="flex flex-col items-center gap-1.5 shrink-0 w-16">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
+                {c.icon ?? "📦"}
+              </span>
+              <span className="text-[11px] font-medium text-gray-700 text-center leading-tight">{c.name}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <main className="flex-1">
         <section className="hero-gradient text-white">

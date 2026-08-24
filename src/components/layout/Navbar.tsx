@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet, ShoppingCart } from "lucide-react";
+import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Package, Inbox, Store, Bell, Wallet, ShoppingCart, Home, Search, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/utils";
 import { LogoMark } from "@/components/ui/Logo";
@@ -46,6 +46,7 @@ export function Navbar({ userRole, userEmail }: Props) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
@@ -95,7 +96,16 @@ export function Navbar({ userRole, userEmail }: Props) {
     router.refresh();
   };
 
+  const isTabActive = (href: string) => (href === "/" ? pathname === "/" : pathname?.startsWith(href));
+
+  const BOTTOM_TABS = [
+    { href: "/", icon: Home, label: "Home" },
+    { href: "/listings", icon: Search, label: "Browse" },
+  ];
+  const accountHref = userEmail ? "/profile" : "/auth/login";
+
   return (
+    <>
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between gap-4">
@@ -248,5 +258,49 @@ export function Navbar({ userRole, userEmail }: Props) {
         )}
       </div>
     </header>
+
+    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-gray-100 shadow-lg">
+      <div className="relative flex items-stretch justify-between px-1">
+        {BOTTOM_TABS.map((tab) => {
+          const active = isTabActive(tab.href);
+          return (
+            <Link key={tab.href} href={tab.href}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${active ? "text-brand-600" : "text-gray-500"}`}>
+              <tab.icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+              {tab.label}
+            </Link>
+          );
+        })}
+
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <Link href="/dashboard" aria-label="Sell"
+            className="relative -top-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 transition-colors">
+            <Plus className="h-6 w-6" strokeWidth={2.5} />
+          </Link>
+          <span className="relative -top-1 text-[11px] font-medium text-gray-500">Sell</span>
+        </div>
+
+        <Link href="/cart" aria-label="Cart"
+          className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${isTabActive("/cart") ? "text-brand-600" : "text-gray-500"}`}>
+          <span className="relative">
+            <ShoppingCart className="h-5 w-5" strokeWidth={isTabActive("/cart") ? 2.5 : 2} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </span>
+          Cart
+        </Link>
+
+        <Link href={accountHref} aria-label="Account"
+          className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${isTabActive("/profile") || isTabActive("/auth/login") ? "text-brand-600" : "text-gray-500"}`}>
+          <User className="h-5 w-5" strokeWidth={isTabActive("/profile") ? 2.5 : 2} />
+          Account
+        </Link>
+      </div>
+      <div className="h-[env(safe-area-inset-bottom)]" />
+    </nav>
+    </>
   );
 }
