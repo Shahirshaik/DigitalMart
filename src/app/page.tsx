@@ -132,6 +132,28 @@ export default async function HomePage() {
       </section>
 
       <main className="flex-1">
+        {featuredListings && featuredListings.length > 0 && (
+          <section className="bg-white">
+            <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-16">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="section-title">Popular Listings</h2>
+                  <p className="text-gray-500 text-sm mt-1">Trending digital goods on the marketplace right now</p>
+                </div>
+                <Link href="/listings" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
+                  Search & Filter <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                {(featuredListings as unknown as ListingFull[]).map((l, i) => {
+                  const s = listingStatsMap.get(l.id);
+                  return <ListingCard key={l.id} listing={l} index={i} rating={s?.avg_rating} reviewCount={s?.review_count} />;
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="hero-gradient text-white">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20 text-center relative">
             <div className="inline-flex items-center gap-2 rounded-full bg-gold-400/20 backdrop-blur px-4 py-1.5 text-xs font-semibold text-gold-200 mb-6 border border-gold-300/30">
@@ -203,28 +225,6 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
-
-        {featuredListings && featuredListings.length > 0 && (
-          <section className="bg-white border-y border-gray-100">
-            <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="section-title">Popular Listings</h2>
-                  <p className="text-gray-500 text-sm mt-1">Trending digital goods on the marketplace right now</p>
-                </div>
-                <Link href="/listings" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
-                  Search & Filter <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-                {(featuredListings as unknown as ListingFull[]).map((l, i) => {
-                  const s = listingStatsMap.get(l.id);
-                  return <ListingCard key={l.id} listing={l} index={i} rating={s?.avg_rating} reviewCount={s?.review_count} />;
-                })}
-              </div>
-            </div>
-          </section>
-        )}
 
         {featuredCourses && featuredCourses.length > 0 && (
           <section className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
